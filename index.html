@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ddt and apple trees — Infinite Archive</title>
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
     body, html {
@@ -88,7 +90,6 @@
       transform-origin: center center;
     }
 
-    /* 종이 찢어지는 애니메이션 */
     @keyframes ripCanvas {
       0% {
         clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
@@ -132,7 +133,6 @@
       cursor: default;
     }
 
-    /* 드래그 핸들 바 (관리자 전용) */
     .drag-handle {
       display: none;
       background: #111;
@@ -160,7 +160,6 @@
       margin-left: 8px;
     }
 
-    /* 컨텐츠 스타일 */
     .media-content {
       width: 100%;
       height: 100%;
@@ -208,7 +207,7 @@
       border: none;
     }
 
-    /* 5. 방문자 확대 보기 (라이트박스 모달) */
+    /* 5. 방문자 확대 보기 */
     .lightbox-modal {
       position: fixed;
       top: 0;
@@ -286,7 +285,6 @@
 
     .hidden-by-filter { display: none !important; }
 
-    /* 로그인 버튼 */
     .admin-trigger {
       position: fixed;
       bottom: 10px;
@@ -321,12 +319,9 @@
   <!-- 관리자 전용 패널 -->
   <div class="admin-panel" id="adminPanel">
     <span>[ADMIN MODE]</span>
-    <input type="file" id="mediaUploader" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleFileUpload(event)" />
-    <button class="admin-btn" style="background:#4ea8de; color:#fff;" onclick="document.getElementById('mediaUploader').click()">📁 파일 업로드</button>
     <button class="admin-btn" style="background:#48bb78; color:#fff;" onclick="addLinkPrompt()">🔗 링크/URL 추가</button>
     <button class="admin-btn" style="background:#ed8936; color:#fff;" onclick="addTextPrompt()">📝 텍스트 작성</button>
     <button class="admin-btn" onclick="tearCurrentCanvas()">✂️ 도화지 찢어서 보관</button>
-    <button class="admin-btn" onclick="exportJSON()">💾 배치 JSON 다운로드</button>
     <button class="admin-btn" style="background:#888; color:#fff;" onclick="toggleAdminMode(false)">X</button>
   </div>
 
@@ -354,13 +349,73 @@
   <div class="admin-trigger" onclick="promptAdminLogin()">🔒 Admin Login</div>
 
   <script>
-    let histories = [];
+    // Supabase 설정
+    const SUPABASE_URL = 'https://ntO5tHSW-9G-yil3kLi3oQ.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     let currentCanvasItems = [];
+    let histories = [];
     let highestZ = 100;
     let isAdmin = false;
     let currentFilter = 'ALL';
 
-    // 1. 캔버스 렌더링
+    // 1. Supabase에서 데이터 불러오기 (새로고침 시 자동 실행)
+    async function loadItemsFromSupabase() {
+      const { data, error } = await _supabase
+        .from('canvas_items')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('데이터를 불러오지 못했습니다:', error);
+        return;
+      }
+
+      if (data) {
+        currentCanvasItems = data.map(item => ({
+          id: item.id,
+          type: item.type,
+          category: item.category,
+          title: item.title,
+          src: item.src,
+          text: item.text,
+          top: Number(item.top),
+          left: Number(item.left),
+          width: Number(item.width),
+          height: Number(item.height),
+          zIndex: Number(item.z_index) || 100
+        }));
+        renderCanvas(currentCanvasItems);
+      }
+    }
+
+    // 2. Supabase에 데이터 저장
+    async function saveItemToSupabase(item) {
+      const { error } = await _supabase.from('canvas_items').upsert([{
+        id: item.id,
+        type: item.type,
+        category: item.category,
+        title: item.title || '',
+        src: item.src || '',
+        text: item.text || '',
+        top: item.top,
+        left: item.left,
+        width: item.width,
+        height: item.height,
+        z_index: item.zIndex
+      }]);
+
+      if (error) console.error('Supabase 저장 오류:', error);
+    }
+
+    // 3. Supabase에서 항목 삭제
+    async function deleteItemFromSupabase(id) {
+      const { error } = await _supabase.from('canvas_items').delete().eq('id', id);
+      if (error) console.error('Supabase 삭제 오류:', error);
+    }
+
+    // 4. 캔버스 렌더링
     function renderCanvas(items) {
       const canvas = document.getElementById('canvas');
       canvas.innerHTML = '';
@@ -386,7 +441,6 @@
         if (item.type === 'IMAGE') {
           contentHTML = `<div class="media-content"><img src="${item.src}"></div>`;
         } else if (item.type === 'VIDEO') {
-          // 동영상 음소거(muted) 처리 적용
           contentHTML = `<div class="media-content"><video controls muted autoplay loop playsinline><source src="${item.src}"></video></div>`;
         } else if (item.type === 'AUDIO') {
           contentHTML = `<div class="media-content audio-box"><audio controls loop><source src="${item.src}"></audio></div>`;
@@ -399,20 +453,19 @@
         el.innerHTML = handleHTML + contentHTML;
         canvas.appendChild(el);
 
-        // 크기 변경 이벤트 감지 (ResizeObserver)
         if (window.ResizeObserver) {
           const ro = new ResizeObserver(entries => {
             for (let entry of entries) {
               if (isAdmin) {
                 item.width = Math.round(entry.contentRect.width);
                 item.height = Math.round(entry.contentRect.height);
+                saveItemToSupabase(item);
               }
             }
           });
           ro.observe(el);
         }
 
-        // 방문자 확대 클릭
         el.addEventListener('click', (e) => {
           if (!isAdmin && !e.target.closest('audio') && !e.target.closest('video') && !e.target.closest('iframe')) {
             openLightbox(item);
@@ -426,37 +479,7 @@
       applyFilter();
     }
 
-    // 2. 파일 직접 업로드
-    function handleFileUpload(event) {
-      if (!isAdmin) return;
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const fileURL = URL.createObjectURL(file);
-      let fileType = 'IMAGE';
-
-      if (file.type.startsWith('video/')) fileType = 'VIDEO';
-      else if (file.type.startsWith('audio/')) fileType = 'AUDIO';
-
-      const newItem = {
-        id: "m_" + Date.now(),
-        type: fileType,
-        category: fileType,
-        title: file.name,
-        src: fileURL,
-        top: 120,
-        left: 120,
-        width: fileType === 'AUDIO' ? 320 : 300,
-        height: fileType === 'AUDIO' ? 80 : 220,
-        zIndex: ++highestZ
-      };
-
-      currentCanvasItems.push(newItem);
-      renderCanvas(currentCanvasItems);
-      event.target.value = '';
-    }
-
-    // 3. 외부 링크/유튜브/음악 추가
+    // 5. 외부 링크/유튜브/음악 추가
     function addLinkPrompt() {
       if (!isAdmin) return;
       const url = prompt("YouTube, Vimeo, MP3, 이미지 또는 웹페이지 URL을 입력하세요:");
@@ -466,7 +489,6 @@
       let category = 'VIDEO';
       let embedSrc = url.trim();
 
-      // YouTube URL 자동 변환
       if (embedSrc.includes('youtube.com/watch') || embedSrc.includes('youtu.be/')) {
         let videoId = '';
         if (embedSrc.includes('youtu.be/')) {
@@ -499,9 +521,10 @@
 
       currentCanvasItems.push(newItem);
       renderCanvas(currentCanvasItems);
+      saveItemToSupabase(newItem);
     }
 
-    // 4. 텍스트 노트 추가
+    // 6. 텍스트 노트 추가
     function addTextPrompt() {
       if (!isAdmin) return;
       const text = prompt("도화지에 게시할 글을 입력하세요:");
@@ -522,6 +545,7 @@
 
       currentCanvasItems.push(newItem);
       renderCanvas(currentCanvasItems);
+      saveItemToSupabase(newItem);
     }
 
     function deleteItem(id, e) {
@@ -529,9 +553,10 @@
       if (!isAdmin) return;
       currentCanvasItems = currentCanvasItems.filter(item => item.id !== id);
       renderCanvas(currentCanvasItems);
+      deleteItemFromSupabase(id);
     }
 
-    // 5. 드래그 이동
+    // 7. 드래그 이동
     function attachDragEvents(element, handleElement, itemObj) {
       let isDragging = false;
       let startX, startY, initialLeft, initialTop;
@@ -562,7 +587,10 @@
         };
 
         const onMouseUp = () => {
-          isDragging = false;
+          if (isDragging) {
+            isDragging = false;
+            saveItemToSupabase(itemObj);
+          }
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
         };
@@ -572,7 +600,7 @@
       });
     }
 
-    // 6. 방문자 클릭시 원본/확대 보기 (Lightbox)
+    // 8. 방문자 클릭시 원본/확대 보기 (Lightbox)
     function openLightbox(item) {
       const modal = document.getElementById('lightboxModal');
       const body = document.getElementById('lightboxBody');
@@ -598,8 +626,8 @@
       document.getElementById('lightboxBody').innerHTML = '';
     }
 
-    // 7. 도화지 찢기 & 보관
-    function tearCurrentCanvas() {
+    // 9. 도화지 찢기 & 보관
+    async function tearCurrentCanvas() {
       if (!isAdmin) return;
       if (currentCanvasItems.length === 0) {
         alert("현재 도화지가 비어있습니다.");
@@ -609,7 +637,7 @@
       const canvas = document.getElementById('canvas');
       canvas.classList.add('canvas-ripping');
 
-      setTimeout(() => {
+      setTimeout(async () => {
         const newHistory = {
           id: `piece_${String(histories.length + 1).padStart(3, '0')}`,
           title: `Collage #${String(histories.length + 1).padStart(2, '0')} — Ripped`,
@@ -617,6 +645,11 @@
           items: JSON.parse(JSON.stringify(currentCanvasItems))
         };
         histories.unshift(newHistory);
+
+        // Supabase DB 비우기
+        for (const item of currentCanvasItems) {
+          await deleteItemFromSupabase(item.id);
+        }
 
         currentCanvasItems = [];
         canvas.classList.remove('canvas-ripping');
@@ -626,7 +659,7 @@
       }, 1200);
     }
 
-    // 8. 히스토리 모달
+    // 10. 히스토리 모달
     function toggleHistoryModal(show) {
       const modal = document.getElementById('historyModal');
       modal.style.display = show ? 'block' : 'none';
@@ -658,7 +691,7 @@
       }
     }
 
-    // 9. 카테고리 필터
+    // 11. 카테고리 필터
     function filterCategory(cat) {
       currentFilter = cat;
       document.querySelectorAll('.top-bar .btn').forEach(btn => {
@@ -680,7 +713,7 @@
       });
     }
 
-    // 10. 관리자 인증 (비밀번호: 0322)
+    // 12. 관리자 인증 (비밀번호: 0322)
     function promptAdminLogin() {
       const input = prompt("관리자 비밀번호를 입력하세요:");
       if (input === null) return;
@@ -700,22 +733,14 @@
       renderCanvas(currentCanvasItems);
     }
 
-    function exportJSON() {
-      if (!isAdmin) return;
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentCanvasItems, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", "canvas_layout.json");
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
     function escapeHtml(str) {
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : '';
     }
 
-    renderCanvas(currentCanvasItems);
+    // 페이지 진입 시 DB 데이터 로드
+    window.addEventListener('DOMContentLoaded', () => {
+      loadItemsFromSupabase();
+    });
   </script>
 </body>
 </html>
