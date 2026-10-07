@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ddt and apple trees — Infinite Archive</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #ffffff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 1. 상단 카테고리 필터 바 */
+    .filter-bar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 9999;
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px;
+      border: 1px solid #111;
+    }
+    .filter-btn {
+      background: none;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    /* 2. 오른쪽 스크랩 보관함 사이드바 */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 260px;
+      height: 100vh;
+      background: #fafafa;
+      border-left: 2px dashed #222;
+      padding: 20px 15px;
+      overflow-y: auto;
+      z-index: 9998;
+    }
+    .sidebar-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-bottom: 2px solid #111;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+    }
+    .archived-item {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      position: relative;
+      border-top: 3px dashed #bbb;
+      transition: transform 0.15s;
+    }
+    .archived-item:hover {
+      transform: scale(1.02);
+      border-color: #111;
+      box-shadow: 2px 4px 10px rgba(0,0,0,0.08);
+    }
+
+    /* 3. 드래그 가능한 미디어 요소 */
+    .draggable {
+      position: absolute;
+      cursor: grab;
+      display: inline-block;
+    }
+    .draggable:active {
+      cursor: grabbing;
+    }
+
+    /* 미디어 헤더 (보관 버튼) */
+    .media-header {
+      background: #111;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+    }
+    .tear-btn {
+      background: #fff;
+      color: #111;
+      border: none;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: bold;
+    }
+    .tear-btn:hover {
+      background: #e63946;
+      color: #fff;
+    }
+
+    /* 미디어 타입별 스타일 */
+    .media-content img {
+      display: block;
+      max-width: 300px;
+      height: auto;
+      pointer-events: none;
+    }
+    .media-content video {
+      display: block;
+      width: 320px;
+      height: auto;
+    }
+    .audio-box {
+      background: #f8f8f8;
+      border: 1px solid #111;
+      padding: 10px;
+      width: 280px;
+    }
+    .audio-box audio { width: 100%; }
+
+    /* 4. 필터링에 의한 숨김 처리 */
+    .hidden-by-filter {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 카테고리 필터 -->
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCategory('ALL')">ALL</button>
+    <button class="filter-btn" onclick="filterCategory('IMAGE')">IMAGE</button>
+    <button class="filter-btn" onclick="filterCategory('VIDEO')">VIDEO</button>
+    <button class="filter-btn" onclick="filterCategory('AUDIO')">AUDIO</button>
+  </div>
+
+  <!-- 달력 찢어서 보관하는 사이드바 -->
+  <div class="sidebar">
+    <div class="sidebar-title">📄 SCRAPBOOK (CLICK TO RESTORE)</div>
+    <div id="scrapbook-list">
+      <!-- 보관된 아이템들이 들어가는 곳 -->
+    </div>
+  </div>
+
+  <!-- [미디어 1: 이미지] -->
+  <div class="draggable" data-category="IMAGE" data-title="Apple Tree Photo" style="top: 100px; left: 80px; z-index: 10;">
+    <div class="media-header">
+      <span>IMAGE // 01</span>
+      <button class="tear-btn" onclick="tearItem(this)">보관하기</button>
+    </div>
+    <div class="media-content">
+      <img src="apple.jpg" alt="Apple Tree" onerror="this.src='https://picsum.photos/300/400?grayscale'">
+    </div>
+  </div>
+
+  <!-- [미디어 2: 영상] -->
+  <div class="draggable" data-category="VIDEO" data-title="Ambient Video Loop" style="top: 120px; left: 420px; z-index: 12;">
+    <div class="media-header">
+      <span>VIDEO // 01</span>
+      <button class="tear-btn" onclick="tearItem(this)">보관하기</button>
+    </div>
+    <div class="media-content">
+      <video controls autoplay muted loop playsinline>
+        <source src="my_video.mp4" type="video/mp4">
+        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <!-- [미디어 3: 음원] -->
+  <div class="draggable" data-category="AUDIO" data-title="Track 01 Demo" style="top: 420px; left: 120px; z-index: 15;">
+    <div class="media-header">
+      <span>AUDIO // 01</span>
+      <button class="tear-btn" onclick="tearItem(this)">보관하기</button>
+    </div>
+    <div class="media-content audio-box">
+      <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: bold;">🎵 Track_01_Demo.mp3</p>
+      <audio controls loop>
+        <source src="track1.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+      </audio>
+    </div>
+  </div>
+
+  <script>
+    let highestZ = 100;
+    let currentFilter = 'ALL';
+
+    // 1. 드래그 & 터치 지원 최상단 이동 처리
+    document.querySelectorAll('.draggable').forEach(element => {
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
+
+      function startDrag(clientX, clientY, target) {
+        if (['AUDIO', 'VIDEO', 'SOURCE', 'BUTTON'].includes(target.tagName)) {
+          element.style.zIndex = ++highestZ;
+          return;
+        }
+
+        isDragging = true;
+        element.style.zIndex = ++highestZ;
+
+        startX = clientX;
+        startY = clientY;
+        const rect = element.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+      }
+
+      function moveDrag(clientX, clientY) {
+        if (!isDragging) return;
+        element.style.left = `${initialLeft + (clientX - startX)}px`;
+        element.style.top = `${initialTop + (clientY - startY)}px`;
+      }
+
+      function endDrag() {
+        isDragging = false;
+      }
+
+      // 마우스 이벤트
+      element.addEventListener('mousedown', (e) => {
+        startDrag(e.clientX, e.clientY, e.target);
+        const onMouseMove = (ev) => moveDrag(ev.clientX, ev.clientY);
+        const onMouseUp = () => {
+          endDrag();
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      // 모바일 터치 이벤트
+      element.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY, e.target);
+      }, { passive: true });
+
+      element.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        moveDrag(touch.clientX, touch.clientY);
+      }, { passive: true });
+
+      element.addEventListener('touchend', () => endDrag());
+    });
+
+    // 2. 즉시 보관 기능
+    function tearItem(button) {
+      const item = button.closest('.draggable');
+      const title = item.getAttribute('data-title');
+      const category = item.getAttribute('data-category');
+
+      item.style.display = 'none';
+
+      const scrapbookList = document.getElementById('scrapbook-list');
+      const scrapEntry = document.createElement('div');
+      scrapEntry.className = 'archived-item';
+      scrapEntry.setAttribute('data-category', category);
+      scrapEntry.innerHTML = `<strong>[${category}]</strong> ${title}<br/><span style="color:#888; font-size:0.65rem;">Click to restore ↩</span>`;
+      
+      scrapEntry.onclick = function () {
+        item.style.display = 'inline-block';
+        item.style.zIndex = ++highestZ;
+        scrapbookList.removeChild(scrapEntry);
+        applyFilter();
+      };
+
+      scrapbookList.appendChild(scrapEntry);
+    }
+
+    // 3. 카테고리 필터링 기능 (ALL / IMAGE / VIDEO / AUDIO)
+    function filterCategory(category) {
+      currentFilter = category;
+
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === category);
+      });
+
+      applyFilter();
+    }
+
+    function applyFilter() {
+      document.querySelectorAll('.draggable').forEach(item => {
+        const itemCategory = item.getAttribute('data-category');
+        if (currentFilter === 'ALL' || itemCategory === currentFilter) {
+          if (item.style.display !== 'none') {
+            item.classList.remove('hidden-by-filter');
+          }
+        } else {
+          item.classList.add('hidden-by-filter');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
