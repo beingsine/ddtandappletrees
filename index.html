@@ -263,15 +263,8 @@
     let isAdmin = false;
     let currentFilter = 'ALL';
 
-    // 비밀번호 설정 (0322의 SHA-256 해시값)
-    const PASS_HASH = "f9a4667d341dd8954f9a5666795f66ff641217e94c9ef89758cb03e30ff531d0";
-
-    async function hashInput(str) {
-      const msgBuffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    // 비밀번호 설정
+    const ADMIN_PASSWORD = "0322";
 
     // ==========================================
     // 1. 캔버스 렌더링
@@ -487,12 +480,11 @@
     // ==========================================
     // 7. 관리자 인증 (비밀번호: 0322)
     // ==========================================
-    async function promptAdminLogin() {
+    function promptAdminLogin() {
       const pw = prompt("관리자 비밀번호를 입력하세요:");
-      if (!pw) return;
+      if (pw === null) return;
 
-      const inputHash = await hashInput(pw);
-      if (inputHash === PASS_HASH) {
+      if (pw.trim() === ADMIN_PASSWORD) {
         toggleAdminMode(true);
       } else {
         alert("비밀번호가 올바르지 않습니다.");
