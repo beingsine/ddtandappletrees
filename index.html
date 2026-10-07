@@ -208,15 +208,22 @@
 
     .hidden-by-filter { display: none !important; }
 
-    /* 우하단 어드민 트리거 */
+    /* 우하단 어드민 트리거 버튼 */
     .admin-trigger {
       position: fixed;
       bottom: 10px;
       right: 10px;
-      font-size: 0.7rem;
-      color: #ccc;
+      font-size: 0.75rem;
+      color: #aaa;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border: 1px solid #ccc;
       cursor: pointer;
       z-index: 9999;
+    }
+    .admin-trigger:hover {
+      background: #111;
+      color: #fff;
     }
   </style>
 </head>
@@ -254,7 +261,8 @@
     <div class="history-grid" id="historyGrid"></div>
   </div>
 
-  <div class="admin-trigger" onclick="promptAdminLogin()">🔒 Admin</div>
+  <!-- 우하단 관리자 로그인 버튼 -->
+  <div class="admin-trigger" onclick="promptAdminLogin()">🔒 Admin Login</div>
 
   <script>
     let histories = [];
@@ -263,12 +271,7 @@
     let isAdmin = false;
     let currentFilter = 'ALL';
 
-    // 비밀번호 설정
-    const ADMIN_PASSWORD = "0322";
-
-    // ==========================================
     // 1. 캔버스 렌더링
-    // ==========================================
     function renderCanvas(items) {
       const canvas = document.getElementById('canvas');
       canvas.innerHTML = '';
@@ -307,9 +310,7 @@
       applyFilter();
     }
 
-    // ==========================================
     // 2. 파일 직접 업로드 (관리자 전용)
-    // ==========================================
     function handleFileUpload(event) {
       if (!isAdmin) return;
 
@@ -348,12 +349,12 @@
       renderCanvas(currentCanvasItems);
     }
 
-    // ==========================================
     // 3. 드래그 이동 (관리자 전용)
-    // ==========================================
     function attachDragEvents(element, handleElement, itemObj) {
       let isDragging = false;
       let startX, startY, initialLeft, initialTop;
+
+      if (!handleElement) return;
 
       handleElement.addEventListener('mousedown', (e) => {
         if (!isAdmin) return;
@@ -389,9 +390,7 @@
       });
     }
 
-    // ==========================================
     // 4. 도화지 찢기 & 보관
-    // ==========================================
     function tearCurrentCanvas() {
       if (!isAdmin) return;
       if (currentCanvasItems.length === 0) {
@@ -419,9 +418,7 @@
       }, 1200);
     }
 
-    // ==========================================
     // 5. 히스토리 모달
-    // ==========================================
     function toggleHistoryModal(show) {
       const modal = document.getElementById('historyModal');
       modal.style.display = show ? 'block' : 'none';
@@ -453,9 +450,7 @@
       }
     }
 
-    // ==========================================
     // 6. 카테고리 필터
-    // ==========================================
     function filterCategory(cat) {
       currentFilter = cat;
       document.querySelectorAll('.top-bar .btn').forEach(btn => {
@@ -477,22 +472,24 @@
       });
     }
 
-    // ==========================================
     // 7. 관리자 인증 (비밀번호: 0322)
-    // ==========================================
     function promptAdminLogin() {
-      const pw = prompt("관리자 비밀번호를 입력하세요:");
-      if (pw === null) return;
+      const input = prompt("관리자 비밀번호를 입력하세요:");
+      if (input === null) return; // 취소 누른 경우
 
-      if (pw.trim() === ADMIN_PASSWORD) {
+      // 공백 제거 후 비교
+      if (String(input).trim() === "0322") {
+        alert("관리자 모드로 전환되었습니다.");
         toggleAdminMode(true);
       } else {
         alert("비밀번호가 올바르지 않습니다.");
       }
     }
 
+    // 단축키 (Ctrl + Shift + A)
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
         promptAdminLogin();
       }
     });
