@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ddt and apple trees</title>
+  <title>Ddt and apple trees — Infinite Archive</title>
   <style>
     * { box-sizing: border-box; }
     body, html {
@@ -50,18 +50,19 @@
       font-weight: bold;
     }
 
-    /* 2. 관리자 컨트롤 패널 (Admin 모드일 때만 표시) */
+    /* 2. 관리자 컨트롤 패널 */
     .admin-panel {
       position: fixed;
       top: 20px;
       right: 20px;
       z-index: 9999;
-      display: none; /* 기본 숨김 */
+      display: none;
       gap: 8px;
       background: #111;
       color: #fff;
       padding: 8px 12px;
       font-size: 0.75rem;
+      align-items: center;
     }
     .admin-btn {
       background: #fff;
@@ -114,15 +115,39 @@
     .draggable {
       position: absolute;
       display: inline-block;
-      transition: box-shadow 0.2s;
+      background: #fff;
+      border: 1px solid transparent;
     }
     body.admin-mode .draggable {
-      cursor: grab;
+      border: 1px solid #ddd;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.08);
       outline: 1px dashed #aaa;
     }
-    body.admin-mode .draggable:active {
+
+    /* 드래그 핸들 바 (관리자 모드에서만 표시) */
+    .drag-handle {
+      display: none;
+      background: #111;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      cursor: grab;
+      justify-content: space-between;
+      align-items: center;
+    }
+    body.admin-mode .drag-handle {
+      display: flex;
+    }
+    .drag-handle:active {
       cursor: grabbing;
-      outline: 2px solid #111;
+    }
+
+    .delete-btn {
+      color: #ff4d4d;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 8px;
     }
 
     .media-content img {
@@ -137,8 +162,6 @@
       height: auto;
     }
     .audio-box {
-      background: #f8f8f8;
-      border: 1px solid #111;
       padding: 10px;
       width: 290px;
     }
@@ -185,13 +208,13 @@
 
     .hidden-by-filter { display: none !important; }
 
-    /* 관리자 로그인 아이콘 (우하단 구석) */
+    /* 우하단 어드민 트리거 */
     .admin-trigger {
       position: fixed;
       bottom: 10px;
       right: 10px;
       font-size: 0.7rem;
-      color: #ddd;
+      color: #ccc;
       cursor: pointer;
       z-index: 9999;
     }
@@ -212,60 +235,46 @@
   <!-- 관리자 전용 툴바 -->
   <div class="admin-panel" id="adminPanel">
     <span>[ADMIN MODE]</span>
+    <input type="file" id="mediaUploader" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleFileUpload(event)" />
+    <button class="admin-btn" style="background:#4ea8de; color:#fff;" onclick="document.getElementById('mediaUploader').click()">➕ 미디어 추가</button>
     <button class="admin-btn" onclick="tearCurrentCanvas()">✂️ 도화지 찢어서 보관</button>
     <button class="admin-btn" onclick="exportJSON()">💾 배치 JSON 다운로드</button>
     <button class="admin-btn" style="background:#888;" onclick="toggleAdminMode(false)">X</button>
   </div>
 
   <!-- 백지 도화지 캔버스 -->
-  <div id="canvas">
-    <!-- 콜라주 미디어가 동적으로 그려집니다 -->
-  </div>
+  <div id="canvas"></div>
 
-  <!-- 과거 작품 히스토리 보관함 모달 -->
+  <!-- 히스토리 모달 -->
   <div class="history-modal" id="historyModal">
     <div class="history-header">
       <h2 style="margin:0; font-size:1.2rem;">RIPPED CANVAS HISTORIES</h2>
       <button class="btn" onclick="toggleHistoryModal(false)">CLOSE [X]</button>
     </div>
-    <div class="history-grid" id="historyGrid">
-      <!-- 찢긴 과거나 작품 세트가 나열됩니다 -->
-    </div>
+    <div class="history-grid" id="historyGrid"></div>
   </div>
 
-  <!-- 우측 하단 관리자 로그인 히든 트리거 -->
   <div class="admin-trigger" onclick="promptAdminLogin()">🔒 Admin</div>
 
   <script>
-    // ==========================================
-    // 1. 초기 작품 데이터 (JSON 구조)
-    // ==========================================
-    // 과거에 찢겨 보관된 콜라주 작품 데이터
-    let histories = [
-      {
-        id: "piece_001",
-        title: "Collage #01 — Apple Tree Residuals",
-        date: "2026-09-15",
-        items: [
-          { type: "IMAGE", category: "IMAGE", src: "apple.jpg", fallback: "https://picsum.photos/300/400?grayscale", top: 120, left: 100, zIndex: 1 },
-          { type: "AUDIO", category: "AUDIO", src: "track1.mp3", fallback: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", title: "Track_01_Demo.mp3", top: 380, left: 140, zIndex: 2 }
-        ]
-      }
-    ];
-
-    // 현재 활성화된 도화지 위 콜라주 데이터
-    let currentCanvasItems = [
-      { id: "m1", type: "IMAGE", category: "IMAGE", src: "apple.jpg", fallback: "https://picsum.photos/300/400?grayscale", top: 100, left: 80, zIndex: 10 },
-      { id: "m2", type: "VIDEO", category: "VIDEO", src: "my_video.mp4", fallback: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", top: 140, left: 450, zIndex: 12 },
-      { id: "m3", type: "AUDIO", category: "AUDIO", src: "track1.mp3", fallback: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", title: "Track_02_Poison.mp3", top: 440, left: 120, zIndex: 15 }
-    ];
-
+    let histories = [];
+    let currentCanvasItems = [];
     let highestZ = 100;
     let isAdmin = false;
     let currentFilter = 'ALL';
 
+    // 비밀번호 설정 (0322의 SHA-256 해시값)
+    const PASS_HASH = "f9a4667d341dd8954f9a5666795f66ff641217e94c9ef89758cb03e30ff531d0";
+
+    async function hashInput(str) {
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     // ==========================================
-    // 2. 캔버스 렌더링
+    // 1. 캔버스 렌더링
     // ==========================================
     function renderCanvas(items) {
       const canvas = document.getElementById('canvas');
@@ -280,79 +289,118 @@
         el.style.left = `${item.left}px`;
         el.style.zIndex = item.zIndex;
 
+        let handleHTML = `
+          <div class="drag-handle">
+            <span>:: ${item.title || item.type}</span>
+            <span class="delete-btn" onclick="deleteItem('${item.id}', event)">✕</span>
+          </div>`;
+
         let contentHTML = '';
         if (item.type === 'IMAGE') {
-          contentHTML = `<div class="media-content"><img src="${item.src}" onerror="this.src='${item.fallback}'"></div>`;
+          contentHTML = `<div class="media-content"><img src="${item.src}"></div>`;
         } else if (item.type === 'VIDEO') {
-          contentHTML = `<div class="media-content"><video controls autoplay muted loop playsinline><source src="${item.src}" type="video/mp4"><source src="${item.fallback}" type="video/mp4"></video></div>`;
+          contentHTML = `<div class="media-content"><video controls autoplay muted loop playsinline><source src="${item.src}"></video></div>`;
         } else if (item.type === 'AUDIO') {
-          contentHTML = `<div class="media-content audio-box"><p style="margin:0 0 6px 0; font-size:0.75rem; font-weight:bold;">🎵 ${item.title || 'Audio Track'}</p><audio controls loop><source src="${item.src}" type="audio/mpeg"><source src="${item.fallback}" type="audio/mpeg"></audio></div>`;
+          contentHTML = `<div class="media-content audio-box"><audio controls loop><source src="${item.src}"></audio></div>`;
         }
 
-        el.innerHTML = contentHTML;
+        el.innerHTML = handleHTML + contentHTML;
         canvas.appendChild(el);
 
-        if (isAdmin) attachDragEvents(el, item);
+        const handleEl = el.querySelector('.drag-handle');
+        attachDragEvents(el, handleEl, item);
       });
 
       applyFilter();
     }
 
     // ==========================================
-    // 3. 관리자 전용 드래그 기능
+    // 2. 파일 직접 업로드 (관리자 전용)
     // ==========================================
-    function attachDragEvents(element, itemObj) {
+    function handleFileUpload(event) {
+      if (!isAdmin) return;
+
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fileURL = URL.createObjectURL(file);
+      let fileType = 'IMAGE';
+
+      if (file.type.startsWith('video/')) {
+        fileType = 'VIDEO';
+      } else if (file.type.startsWith('audio/')) {
+        fileType = 'AUDIO';
+      }
+
+      const newItem = {
+        id: "m_" + Date.now(),
+        type: fileType,
+        category: fileType,
+        title: file.name,
+        src: fileURL,
+        top: Math.random() * 200 + 100,
+        left: Math.random() * 300 + 100,
+        zIndex: ++highestZ
+      };
+
+      currentCanvasItems.push(newItem);
+      renderCanvas(currentCanvasItems);
+      event.target.value = '';
+    }
+
+    function deleteItem(id, e) {
+      e.stopPropagation();
+      if (!isAdmin) return;
+      currentCanvasItems = currentCanvasItems.filter(item => item.id !== id);
+      renderCanvas(currentCanvasItems);
+    }
+
+    // ==========================================
+    // 3. 드래그 이동 (관리자 전용)
+    // ==========================================
+    function attachDragEvents(element, handleElement, itemObj) {
       let isDragging = false;
       let startX, startY, initialLeft, initialTop;
 
-      function startDrag(clientX, clientY, target) {
+      handleElement.addEventListener('mousedown', (e) => {
         if (!isAdmin) return;
-        if (['AUDIO', 'VIDEO', 'SOURCE'].includes(target.tagName)) {
-          element.style.zIndex = ++highestZ;
-          itemObj.zIndex = highestZ;
-          return;
-        }
 
         isDragging = true;
         element.style.zIndex = ++highestZ;
         itemObj.zIndex = highestZ;
 
-        startX = clientX;
-        startY = clientY;
+        startX = e.clientX;
+        startY = e.clientY;
         const rect = element.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
-      }
 
-      function moveDrag(clientX, clientY) {
-        if (!isDragging) return;
-        const newLeft = initialLeft + (clientX - startX);
-        const newTop = initialTop + (clientY - startY);
-        element.style.left = `${newLeft}px`;
-        element.style.top = `${newTop}px`;
-        itemObj.left = newLeft;
-        itemObj.top = newTop;
-      }
+        const onMouseMove = (ev) => {
+          if (!isDragging || !isAdmin) return;
+          const newLeft = initialLeft + (ev.clientX - startX);
+          const newTop = initialTop + (ev.clientY - startY);
+          element.style.left = `${newLeft}px`;
+          element.style.top = `${newTop}px`;
+          itemObj.left = newLeft;
+          itemObj.top = newTop;
+        };
 
-      function endDrag() { isDragging = false; }
-
-      element.addEventListener('mousedown', (e) => {
-        startDrag(e.clientX, e.clientY, e.target);
-        const onMouseMove = (ev) => moveDrag(ev.clientX, ev.clientY);
         const onMouseUp = () => {
-          endDrag();
+          isDragging = false;
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
         };
+
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
       });
     }
 
     // ==========================================
-    // 4. 도화지 찢기 & 히스토리 보관 (Rip & Archive)
+    // 4. 도화지 찢기 & 보관
     // ==========================================
     function tearCurrentCanvas() {
+      if (!isAdmin) return;
       if (currentCanvasItems.length === 0) {
         alert("현재 도화지가 비어있습니다.");
         return;
@@ -362,16 +410,14 @@
       canvas.classList.add('canvas-ripping');
 
       setTimeout(() => {
-        // 현재 작품을 히스토리로 백업
         const newHistory = {
           id: `piece_${String(histories.length + 1).padStart(3, '0')}`,
-          title: `Collage #${String(histories.length + 1).padStart(2, '0')} — Archived`,
+          title: `Collage #${String(histories.length + 1).padStart(2, '0')} — Ripped`,
           date: new Date().toISOString().slice(0, 10),
           items: JSON.parse(JSON.stringify(currentCanvasItems))
         };
         histories.unshift(newHistory);
 
-        // 도화지 비우기 (새 백지)
         currentCanvasItems = [];
         canvas.classList.remove('canvas-ripping');
         renderCanvas(currentCanvasItems);
@@ -381,7 +427,7 @@
     }
 
     // ==========================================
-    // 5. 히스토리 모달 관리
+    // 5. 히스토리 모달
     // ==========================================
     function toggleHistoryModal(show) {
       const modal = document.getElementById('historyModal');
@@ -402,8 +448,8 @@
           card.innerHTML = `
             <div style="font-size:0.7rem; color:#888;">${h.date}</div>
             <div style="font-weight:bold; font-size:0.95rem; margin:6px 0;">${h.title}</div>
-            <div style="font-size:0.75rem; color:#555;">Elements: ${h.items.length} (Image/Video/Audio)</div>
-            <div style="margin-top:10px; font-size:0.7rem; text-decoration:underline;">Click to display on canvas 👁</div>
+            <div style="font-size:0.75rem; color:#555;">Items: ${h.items.length}</div>
+            <div style="margin-top:10px; font-size:0.7rem; text-decoration:underline;">Click to view 👁</div>
           `;
           card.onclick = () => {
             renderCanvas(h.items);
@@ -415,7 +461,7 @@
     }
 
     // ==========================================
-    // 6. 카테고리 필터링 (ALL / IMAGE / VIDEO / AUDIO)
+    // 6. 카테고리 필터
     // ==========================================
     function filterCategory(cat) {
       currentFilter = cat;
@@ -439,18 +485,20 @@
     }
 
     // ==========================================
-    // 7. 관리자 인증 & JSON 내보내기
+    // 7. 관리자 인증 (비밀번호: 0322)
     // ==========================================
-    function promptAdminLogin() {
-      const pw = prompt("관리자 비밀번호를 입력하세요 (기본: 1234):");
-      if (pw === "1234") {
+    async function promptAdminLogin() {
+      const pw = prompt("관리자 비밀번호를 입력하세요:");
+      if (!pw) return;
+
+      const inputHash = await hashInput(pw);
+      if (inputHash === PASS_HASH) {
         toggleAdminMode(true);
-      } else if (pw !== null) {
+      } else {
         alert("비밀번호가 올바르지 않습니다.");
       }
     }
 
-    // 단축키 Ctrl + Shift + A 모드 전환
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         promptAdminLogin();
@@ -465,6 +513,7 @@
     }
 
     function exportJSON() {
+      if (!isAdmin) return;
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentCanvasItems, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
@@ -474,7 +523,6 @@
       downloadAnchor.remove();
     }
 
-    // 페이지 시작 실행
     renderCanvas(currentCanvasItems);
   </script>
 </body>
