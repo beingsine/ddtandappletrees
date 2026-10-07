@@ -2,745 +2,345 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ddt and apple trees — Infinite Archive</title>
-  <!-- Supabase JS CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Archive Canvas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: #ffffff;
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
+    body {
       user-select: none;
+      background-color: #f8fafc;
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 24px 24px;
     }
-
-    /* 1. 상단 컨트롤 바 */
-    .top-bar {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 9999;
-      display: flex;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 8px 12px;
-      border: 1px solid #111;
-      box-shadow: 2px 2px 0px #111;
-    }
-    .btn {
-      background: none;
-      border: 1px solid #ccc;
-      padding: 6px 12px;
-      font-family: inherit;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn.active, .btn:hover {
-      background: #111;
-      color: #fff;
-      border-color: #111;
-    }
-    .btn-history {
-      background: #f4f4f4;
-      border-color: #111;
-      font-weight: bold;
-    }
-
-    /* 2. 관리자 컨트롤 패널 */
-    .admin-panel {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-      display: none;
-      gap: 8px;
-      background: #111;
-      color: #fff;
-      padding: 8px 12px;
-      font-size: 0.75rem;
-      align-items: center;
-      flex-wrap: wrap;
-      max-width: 80vw;
-    }
-    .admin-btn {
-      background: #fff;
-      color: #111;
-      border: none;
-      padding: 6px 10px;
-      font-family: inherit;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .admin-btn:hover { background: #e63946; color: #fff; }
-
-    /* 3. 백지 도화지 캔버스 */
-    #canvas {
+    .canvas-item {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: #ffffff;
-      transform-origin: center center;
+      touch-action: none;
+      transition: box-shadow 0.15s ease;
     }
-
-    @keyframes ripCanvas {
-      0% {
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-      }
-      30% {
-        clip-path: polygon(0 0, 45% 15%, 55% 85%, 100% 0, 100% 100%, 0 100%);
-      }
-      70% {
-        clip-path: polygon(0 0, 20% 40%, 80% 60%, 100% 10%, 90% 90%, 10% 90%);
-        transform: scale(0.85) rotate(-3deg) translateY(50px);
-        opacity: 0.7;
-      }
-      100% {
-        clip-path: polygon(0 0, 0 0, 100% 100%, 100% 100%);
-        transform: scale(0.6) rotate(12deg) translateY(300px);
-        opacity: 0;
-      }
+    .canvas-item:hover {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     }
-    .canvas-ripping {
-      animation: ripCanvas 1.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
-    }
-
-    /* 4. 콜라주 미디어 요소 */
-    .draggable {
+    .resize-handle {
       position: absolute;
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      border: 1px solid transparent;
-      overflow: hidden;
-      cursor: pointer;
+      width: 12px;
+      height: 12px;
+      right: 2px;
+      bottom: 2px;
+      cursor: se-resize;
+      background-color: #cbd5e1;
+      border-radius: 2px;
     }
-    body.admin-mode .draggable {
-      border: 1px solid #ddd;
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.08);
-      outline: 1px dashed #aaa;
-      resize: both;
-      overflow: auto;
-      cursor: default;
-    }
-
-    .drag-handle {
-      display: none;
-      background: #111;
-      color: #fff;
-      padding: 4px 8px;
-      font-size: 0.7rem;
-      font-weight: bold;
-      cursor: grab;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-      flex-shrink: 0;
-    }
-    body.admin-mode .drag-handle {
-      display: flex;
-    }
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-
-    .delete-btn {
-      color: #ff4d4d;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 8px;
-    }
-
-    .media-content {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .media-content img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      pointer-events: none;
-    }
-    .media-content video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .audio-box {
-      padding: 10px;
-      width: 100%;
-      background: #fafafa;
-    }
-    .audio-box audio { width: 100%; }
-
-    .text-box {
-      padding: 12px;
-      font-size: 0.9rem;
-      line-height: 1.5;
-      color: #111;
-      white-space: pre-wrap;
-      word-break: break-word;
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      background: #fff;
-    }
-
-    .iframe-box {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* 5. 방문자 확대 보기 */
-    .lightbox-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 20000;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 30px;
-    }
-    .lightbox-content {
-      max-width: 90vw;
-      max-height: 85vh;
-      background: #fff;
-      padding: 15px;
-      position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: auto;
-    }
-    .lightbox-close {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #111;
-      cursor: pointer;
-      z-index: 20001;
-    }
-
-    /* 6. 히스토리 모달 */
-    .history-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(255, 255, 255, 0.96);
-      z-index: 10000;
-      display: none;
-      padding: 40px;
-      overflow-y: auto;
-    }
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #111;
-      padding-bottom: 12px;
-      margin-bottom: 30px;
-    }
-    .history-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .history-card {
-      border: 1px solid #111;
-      padding: 16px;
-      background: #fff;
-      cursor: pointer;
-      border-top: 4px solid #111;
-      transition: transform 0.2s;
-    }
-    .history-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 4px 4px 0px #111;
-    }
-
-    .hidden-by-filter { display: none !important; }
-
-    .admin-trigger {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      font-size: 0.75rem;
-      color: #aaa;
-      background: #f0f0f0;
-      padding: 4px 8px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      z-index: 9999;
-    }
-    .admin-trigger:hover {
-      background: #111;
-      color: #fff;
+    .note-bg {
+      background-color: #fef08a;
     }
   </style>
 </head>
-<body>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-sans text-slate-800">
 
-  <!-- 상단 카테고리 필터 & 히스토리 -->
-  <div class="top-bar">
-    <button class="btn active" onclick="filterCategory('ALL')">ALL</button>
-    <button class="btn" onclick="filterCategory('IMAGE')">IMAGE</button>
-    <button class="btn" onclick="filterCategory('VIDEO')">VIDEO</button>
-    <button class="btn" onclick="filterCategory('AUDIO')">AUDIO</button>
-    <button class="btn" onclick="filterCategory('TEXT')">TEXT</button>
-    <span style="border-left: 1px solid #ccc; margin: 0 4px;"></span>
-    <button class="btn btn-history" onclick="toggleHistoryModal(true)">📜 HISTORIES</button>
-  </div>
+  <!-- Header / Toolbar -->
+  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between z-50">
+    <div class="flex items-center space-x-3">
+      <h1 class="text-xl font-bold tracking-tight text-slate-900">Archive Canvas</h1>
+      <span id="adminBadge" class="hidden text-xs bg-red-100 text-red-700 font-semibold px-2.5 py-0.5 rounded-full">Admin Mode</span>
+    </div>
 
-  <!-- 관리자 전용 패널 -->
-  <div class="admin-panel" id="adminPanel">
-    <span>[ADMIN MODE]</span>
-    <button class="admin-btn" style="background:#48bb78; color:#fff;" onclick="addLinkPrompt()">🔗 링크/URL 추가</button>
-    <button class="admin-btn" style="background:#ed8936; color:#fff;" onclick="addTextPrompt()">📝 텍스트 작성</button>
-    <button class="admin-btn" onclick="tearCurrentCanvas()">✂️ 도화지 찢어서 보관</button>
-    <button class="admin-btn" style="background:#888; color:#fff;" onclick="toggleAdminMode(false)">X</button>
-  </div>
+    <!-- Controls -->
+    <div class="flex items-center space-x-2">
+      <div id="adminControls" class="hidden flex items-center space-x-2">
+        <button onclick="openAddModal('text')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 텍스트</button>
+        <button onclick="openAddModal('note')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 메모</button>
+        <button onclick="openAddModal('image')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 이미지</button>
+        <button onclick="openAddModal('video')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 유튜브</button>
+      </div>
+      <button onclick="toggleAdminMode()" id="adminToggleBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">관리자 로그인</button>
+    </div>
+  </header>
 
-  <!-- 캔버스 영역 -->
-  <div id="canvas"></div>
+  <!-- Main Canvas -->
+  <main id="canvas" class="flex-1 relative overflow-hidden">
+    <!-- Canvas items will render dynamically -->
+  </main>
 
-  <!-- 방문자 확대 보기 (라이트박스) 모달 -->
-  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox()">
-    <div class="lightbox-content" id="lightboxContent" onclick="event.stopPropagation()">
-      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
-      <div id="lightboxBody"></div>
+  <!-- Add Item Modal -->
+  <div id="addModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 m-4">
+      <h2 id="modalTitle" class="text-lg font-bold mb-4">항목 추가</h2>
+      <input type="hidden" id="modalItemType" />
+      
+      <div class="mb-4">
+        <label id="modalInputLabel" class="block text-sm font-medium text-slate-700 mb-1">내용</label>
+        <textarea id="modalInputContent" rows="4" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none" placeholder="내용을 입력하세요..."></textarea>
+      </div>
+
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeAddModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
+        <button onclick="submitNewItem()" class="px-4 py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800">추가</button>
+      </div>
     </div>
   </div>
-
-  <!-- 히스토리 모달 -->
-  <div class="history-modal" id="historyModal">
-    <div class="history-header">
-      <h2 style="margin:0; font-size:1.2rem;">RIPPED CANVAS HISTORIES</h2>
-      <button class="btn" onclick="toggleHistoryModal(false)">CLOSE [X]</button>
-    </div>
-    <div class="history-grid" id="historyGrid"></div>
-  </div>
-
-  <!-- 로그인 트리거 -->
-  <div class="admin-trigger" onclick="promptAdminLogin()">🔒 Admin Login</div>
 
   <script>
-    // Supabase 설정
-    const SUPABASE_URL = 'https://ntO5tHSW-9G-yil3kLi3oQ.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let currentCanvasItems = [];
-    let histories = [];
-    let highestZ = 100;
-    let isAdmin = false;
-    let currentFilter = 'ALL';
-
-    // 1. Supabase에서 데이터 불러오기 (새로고침 시 자동 실행)
-    async function loadItemsFromSupabase() {
-      const { data, error } = await _supabase
-        .from('canvas_items')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('데이터를 불러오지 못했습니다:', error);
-        return;
-      }
-
-      if (data) {
-        currentCanvasItems = data.map(item => ({
-          id: item.id,
-          type: item.type,
-          category: item.category,
-          title: item.title,
-          src: item.src,
-          text: item.text,
-          top: Number(item.top),
-          left: Number(item.left),
-          width: Number(item.width),
-          height: Number(item.height),
-          zIndex: Number(item.z_index) || 100
-        }));
-        renderCanvas(currentCanvasItems);
-      }
+    // --- Config & State ---
+    const SUPABASE_URL = "https://your-project.supabase.co"; // 본인의 Supabase URL로 변경
+    const SUPABASE_ANON_KEY = "your-anon-key";              // 본인의 Supabase Anon Key로 변경
+    
+    let supabase = null;
+    if (SUPABASE_URL !== "https://your-project.supabase.co") {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
-    // 2. Supabase에 데이터 저장
-    async function saveItemToSupabase(item) {
-      const { error } = await _supabase.from('canvas_items').upsert([{
+    let isAdmin = false;
+    let items = [];
+    let maxZIndex = 1;
+
+    // --- Debounce Utility ---
+    function debounce(func, wait = 300) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // --- YouTube URL Parser ---
+    function extractYouTubeId(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // --- DB Operations (with Debouncing) ---
+    const saveItemToSupabase = debounce(async (item) => {
+      if (!supabase || !isAdmin) return;
+      const { error } = await supabase.from('canvas_items').upsert({
         id: item.id,
         type: item.type,
-        category: item.category,
-        title: item.title || '',
-        src: item.src || '',
-        text: item.text || '',
-        top: item.top,
-        left: item.left,
+        content: item.content,
+        x: item.x,
+        y: item.y,
         width: item.width,
         height: item.height,
-        z_index: item.zIndex
-      }]);
+        z_index: item.z_index
+      });
+      if (error) console.error("Supabase Save Error:", error.message);
+    }, 400);
 
-      if (error) console.error('Supabase 저장 오류:', error);
-    }
-
-    // 3. Supabase에서 항목 삭제
     async function deleteItemFromSupabase(id) {
-      const { error } = await _supabase.from('canvas_items').delete().eq('id', id);
-      if (error) console.error('Supabase 삭제 오류:', error);
+      if (!supabase || !isAdmin) return;
+      const { error } = await supabase.from('canvas_items').delete().eq('id', id);
+      if (error) console.error("Supabase Delete Error:", error.message);
     }
 
-    // 4. 캔버스 렌더링
-    function renderCanvas(items) {
+    async function loadItems() {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('canvas_items').select('*');
+      if (error) {
+        console.error("Supabase Fetch Error:", error.message);
+        return;
+      }
+      if (data) {
+        items = data;
+        items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
+        renderCanvas();
+      }
+    }
+
+    // --- UI Render & Interactions ---
+    function renderCanvas() {
       const canvas = document.getElementById('canvas');
       canvas.innerHTML = '';
 
       items.forEach(item => {
         const el = document.createElement('div');
-        el.className = 'draggable';
-        el.setAttribute('data-id', item.id);
-        el.setAttribute('data-category', item.category);
-        el.style.top = `${item.top}px`;
-        el.style.left = `${item.left}px`;
-        el.style.width = item.width ? `${item.width}px` : 'auto';
-        el.style.height = item.height ? `${item.height}px` : 'auto';
-        el.style.zIndex = item.zIndex;
+        el.className = `canvas-item rounded-xl p-3 shadow-sm border border-slate-200/80 bg-white ${item.type === 'note' ? 'note-bg border-amber-300' : ''}`;
+        el.style.left = `${item.x}px`;
+        el.style.top = `${item.y}px`;
+        el.style.width = `${item.width}px`;
+        el.style.height = `${item.height}px`;
+        el.style.zIndex = item.z_index || 1;
 
-        let handleHTML = `
-          <div class="drag-handle">
-            <span>:: ${item.title || item.type}</span>
-            <span class="delete-btn" onclick="deleteItem('${item.id}', event)">✕</span>
-          </div>`;
-
-        let contentHTML = '';
-        if (item.type === 'IMAGE') {
-          contentHTML = `<div class="media-content"><img src="${item.src}"></div>`;
-        } else if (item.type === 'VIDEO') {
-          contentHTML = `<div class="media-content"><video controls muted autoplay loop playsinline><source src="${item.src}"></video></div>`;
-        } else if (item.type === 'AUDIO') {
-          contentHTML = `<div class="media-content audio-box"><audio controls loop><source src="${item.src}"></audio></div>`;
-        } else if (item.type === 'TEXT') {
-          contentHTML = `<div class="text-box">${escapeHtml(item.text)}</div>`;
-        } else if (item.type === 'EMBED') {
-          contentHTML = `<iframe class="iframe-box" src="${item.src}" allowfullscreen></iframe>`;
-        }
-
-        el.innerHTML = handleHTML + contentHTML;
-        canvas.appendChild(el);
-
-        if (window.ResizeObserver) {
-          const ro = new ResizeObserver(entries => {
-            for (let entry of entries) {
-              if (isAdmin) {
-                item.width = Math.round(entry.contentRect.width);
-                item.height = Math.round(entry.contentRect.height);
-                saveItemToSupabase(item);
-              }
-            }
-          });
-          ro.observe(el);
-        }
-
-        el.addEventListener('click', (e) => {
-          if (!isAdmin && !e.target.closest('audio') && !e.target.closest('video') && !e.target.closest('iframe')) {
-            openLightbox(item);
+        // Item Content Rendering
+        let contentHtml = '';
+        if (item.type === 'text') {
+          contentHtml = `<p class="whitespace-pre-wrap text-sm text-slate-800">${item.content}</p>`;
+        } else if (item.type === 'note') {
+          contentHtml = `<p class="whitespace-pre-wrap text-sm text-amber-950 font-medium">${item.content}</p>`;
+        } else if (item.type === 'image') {
+          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" />`;
+        } else if (item.type === 'video') {
+          const videoId = extractYouTubeId(item.content);
+          if (videoId) {
+            contentHtml = `<iframe class="w-full h-full rounded-lg pointer-events-none" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+          } else {
+            contentHtml = `<p class="text-xs text-red-500">잘못된 유튜브 URL입니다.</p>`;
           }
-        });
-
-        const handleEl = el.querySelector('.drag-handle');
-        attachDragEvents(el, handleEl, item);
-      });
-
-      applyFilter();
-    }
-
-    // 5. 외부 링크/유튜브/음악 추가
-    function addLinkPrompt() {
-      if (!isAdmin) return;
-      const url = prompt("YouTube, Vimeo, MP3, 이미지 또는 웹페이지 URL을 입력하세요:");
-      if (!url) return;
-
-      let type = 'EMBED';
-      let category = 'VIDEO';
-      let embedSrc = url.trim();
-
-      if (embedSrc.includes('youtube.com/watch') || embedSrc.includes('youtu.be/')) {
-        let videoId = '';
-        if (embedSrc.includes('youtu.be/')) {
-          videoId = embedSrc.split('youtu.be/')[1].split('?')[0];
-        } else {
-          videoId = new URL(embedSrc).searchParams.get('v');
         }
-        embedSrc = `https://www.youtube.com/embed/${videoId}`;
-        category = 'VIDEO';
-      } else if (embedSrc.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-        type = 'IMAGE';
-        category = 'IMAGE';
-      } else if (embedSrc.match(/\.(mp3|wav|ogg)$/i)) {
-        type = 'AUDIO';
-        category = 'AUDIO';
-      }
 
-      const newItem = {
-        id: "link_" + Date.now(),
-        type: type,
-        category: category,
-        title: "Link Asset",
-        src: embedSrc,
-        top: 150,
-        left: 150,
-        width: 360,
-        height: type === 'AUDIO' ? 80 : 240,
-        zIndex: ++highestZ
-      };
+        // Delete Button for Admin
+        const deleteBtn = isAdmin ? `
+          <button onclick="removeItem('${item.id}', event)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow">×</button>
+        ` : '';
 
-      currentCanvasItems.push(newItem);
-      renderCanvas(currentCanvasItems);
-      saveItemToSupabase(newItem);
+        // Resize handle for Admin
+        const resizeHandle = isAdmin ? `<div class="resize-handle"></div>` : '';
+
+        el.innerHTML = `${deleteBtn}${contentHtml}${resizeHandle}`;
+
+        // Event Handling
+        setupInteractions(el, item);
+        canvas.appendChild(el);
+      });
     }
 
-    // 6. 텍스트 노트 추가
-    function addTextPrompt() {
-      if (!isAdmin) return;
-      const text = prompt("도화지에 게시할 글을 입력하세요:");
-      if (!text) return;
-
-      const newItem = {
-        id: "txt_" + Date.now(),
-        type: 'TEXT',
-        category: 'TEXT',
-        title: 'Note',
-        text: text,
-        top: 180,
-        left: 180,
-        width: 280,
-        height: 160,
-        zIndex: ++highestZ
-      };
-
-      currentCanvasItems.push(newItem);
-      renderCanvas(currentCanvasItems);
-      saveItemToSupabase(newItem);
-    }
-
-    function deleteItem(id, e) {
-      e.stopPropagation();
-      if (!isAdmin) return;
-      currentCanvasItems = currentCanvasItems.filter(item => item.id !== id);
-      renderCanvas(currentCanvasItems);
-      deleteItemFromSupabase(id);
-    }
-
-    // 7. 드래그 이동
-    function attachDragEvents(element, handleElement, itemObj) {
+    function setupInteractions(el, item) {
       let isDragging = false;
-      let startX, startY, initialLeft, initialTop;
+      let isResizing = false;
+      let startX, startY, startLeft, startTop, startWidth, startHeight;
 
-      if (!handleElement) return;
+      const handleDown = (e) => {
+        // Z-Index bring to front
+        maxZIndex++;
+        item.z_index = maxZIndex;
+        el.style.zIndex = maxZIndex;
+        saveItemToSupabase(item);
 
-      handleElement.addEventListener('mousedown', (e) => {
         if (!isAdmin) return;
 
-        isDragging = true;
-        element.style.zIndex = ++highestZ;
-        itemObj.zIndex = highestZ;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = element.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-
-        const onMouseMove = (ev) => {
-          if (!isDragging || !isAdmin) return;
-          const newLeft = initialLeft + (ev.clientX - startX);
-          const newTop = initialTop + (ev.clientY - startY);
-          element.style.left = `${newLeft}px`;
-          element.style.top = `${newTop}px`;
-          itemObj.left = newLeft;
-          itemObj.top = newTop;
-        };
-
-        const onMouseUp = () => {
-          if (isDragging) {
-            isDragging = false;
-            saveItemToSupabase(itemObj);
-          }
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-        };
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-      });
-    }
-
-    // 8. 방문자 클릭시 원본/확대 보기 (Lightbox)
-    function openLightbox(item) {
-      const modal = document.getElementById('lightboxModal');
-      const body = document.getElementById('lightboxBody');
-      body.innerHTML = '';
-
-      if (item.type === 'IMAGE') {
-        body.innerHTML = `<img src="${item.src}" style="max-width:100%; max-height:75vh; display:block;">`;
-      } else if (item.type === 'VIDEO') {
-        body.innerHTML = `<video src="${item.src}" controls muted style="max-width:100%; max-height:75vh;"></video>`;
-      } else if (item.type === 'AUDIO') {
-        body.innerHTML = `<div style="padding:20px; width:320px;"><audio src="${item.src}" controls style="width:100%;"></audio></div>`;
-      } else if (item.type === 'TEXT') {
-        body.innerHTML = `<div style="padding:20px; max-width:600px; font-size:1.1rem; line-height:1.6; white-space:pre-wrap;">${escapeHtml(item.text)}</div>`;
-      } else if (item.type === 'EMBED') {
-        body.innerHTML = `<iframe src="${item.src}" style="width:70vw; height:60vh; border:none;" allowfullscreen></iframe>`;
-      }
-
-      modal.style.display = 'flex';
-    }
-
-    function closeLightbox() {
-      document.getElementById('lightboxModal').style.display = 'none';
-      document.getElementById('lightboxBody').innerHTML = '';
-    }
-
-    // 9. 도화지 찢기 & 보관
-    async function tearCurrentCanvas() {
-      if (!isAdmin) return;
-      if (currentCanvasItems.length === 0) {
-        alert("현재 도화지가 비어있습니다.");
-        return;
-      }
-
-      const canvas = document.getElementById('canvas');
-      canvas.classList.add('canvas-ripping');
-
-      setTimeout(async () => {
-        const newHistory = {
-          id: `piece_${String(histories.length + 1).padStart(3, '0')}`,
-          title: `Collage #${String(histories.length + 1).padStart(2, '0')} — Ripped`,
-          date: new Date().toISOString().slice(0, 10),
-          items: JSON.parse(JSON.stringify(currentCanvasItems))
-        };
-        histories.unshift(newHistory);
-
-        // Supabase DB 비우기
-        for (const item of currentCanvasItems) {
-          await deleteItemFromSupabase(item.id);
-        }
-
-        currentCanvasItems = [];
-        canvas.classList.remove('canvas-ripping');
-        renderCanvas(currentCanvasItems);
-
-        alert("현재 도화지가 찢어져 히스토리에 보관되었습니다.");
-      }, 1200);
-    }
-
-    // 10. 히스토리 모달
-    function toggleHistoryModal(show) {
-      const modal = document.getElementById('historyModal');
-      modal.style.display = show ? 'block' : 'none';
-
-      if (show) {
-        const grid = document.getElementById('historyGrid');
-        grid.innerHTML = '';
-
-        if (histories.length === 0) {
-          grid.innerHTML = '<p style="color:#888;">보관된 과거 도화지가 없습니다.</p>';
-          return;
-        }
-
-        histories.forEach(h => {
-          const card = document.createElement('div');
-          card.className = 'history-card';
-          card.innerHTML = `
-            <div style="font-size:0.7rem; color:#888;">${h.date}</div>
-            <div style="font-weight:bold; font-size:0.95rem; margin:6px 0;">${h.title}</div>
-            <div style="font-size:0.75rem; color:#555;">Items: ${h.items.length}</div>
-            <div style="margin-top:10px; font-size:0.7rem; text-decoration:underline;">Click to view 👁</div>
-          `;
-          card.onclick = () => {
-            renderCanvas(h.items);
-            toggleHistoryModal(false);
-          };
-          grid.appendChild(card);
-        });
-      }
-    }
-
-    // 11. 카테고리 필터
-    function filterCategory(cat) {
-      currentFilter = cat;
-      document.querySelectorAll('.top-bar .btn').forEach(btn => {
-        if (['ALL','IMAGE','VIDEO','AUDIO','TEXT'].includes(btn.innerText)) {
-          btn.classList.toggle('active', btn.innerText === cat);
-        }
-      });
-      applyFilter();
-    }
-
-    function applyFilter() {
-      document.querySelectorAll('.draggable').forEach(el => {
-        const itemCat = el.getAttribute('data-category');
-        if (currentFilter === 'ALL' || itemCat === currentFilter) {
-          el.classList.remove('hidden-by-filter');
+        if (e.target.classList.contains('resize-handle')) {
+          isResizing = true;
+          startWidth = item.width;
+          startHeight = item.height;
+          startX = clientX;
+          startY = clientY;
         } else {
-          el.classList.add('hidden-by-filter');
+          isDragging = true;
+          startLeft = item.x;
+          startTop = item.y;
+          startX = clientX;
+          startY = clientY;
         }
-      });
+
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchmove', handleMove);
+        window.addEventListener('touchend', handleUp);
+      };
+
+      const handleMove = (e) => {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        if (isDragging) {
+          item.x = startLeft + (clientX - startX);
+          item.y = startTop + (clientY - startY);
+          el.style.left = `${item.x}px`;
+          el.style.top = `${item.y}px`;
+          saveItemToSupabase(item);
+        } else if (isResizing) {
+          item.width = Math.max(120, startWidth + (clientX - startX));
+          item.height = Math.max(80, startHeight + (clientY - startY));
+          el.style.width = `${item.width}px`;
+          el.style.height = `${item.height}px`;
+          saveItemToSupabase(item);
+        }
+      };
+
+      const handleUp = () => {
+        isDragging = false;
+        isResizing = false;
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleUp);
+      };
+
+      el.addEventListener('mousedown', handleDown);
+      el.addEventListener('touchstart', handleDown, { passive: true });
     }
 
-    // 12. 관리자 인증 (비밀번호: 0322)
-    function promptAdminLogin() {
-      const input = prompt("관리자 비밀번호를 입력하세요:");
-      if (input === null) return;
-
-      if (String(input).trim() === "0322") {
-        alert("관리자 모드로 전환되었습니다.");
-        toggleAdminMode(true);
+    // --- Admin Toggle & Modals ---
+    function toggleAdminMode() {
+      if (!isAdmin) {
+        const pwd = prompt("관리자 비밀번호를 입력하세요:");
+        if (pwd === "0322") { // 보안 필요시 서버 세션 기반 Auth 권장
+          isAdmin = true;
+          document.getElementById('adminBadge').classList.remove('hidden');
+          document.getElementById('adminControls').classList.remove('hidden');
+          document.getElementById('adminToggleBtn').innerText = "관리자 로그아웃";
+        } else if (pwd !== null) {
+          alert("비밀번호가 올바르지 않습니다.");
+        }
       } else {
-        alert("비밀번호가 올바르지 않습니다.");
+        isAdmin = false;
+        document.getElementById('adminBadge').classList.add('hidden');
+        document.getElementById('adminControls').classList.add('hidden');
+        document.getElementById('adminToggleBtn').innerText = "관리자 로그인";
       }
+      renderCanvas();
     }
 
-    function toggleAdminMode(enable) {
-      isAdmin = enable;
-      document.body.classList.toggle('admin-mode', enable);
-      document.getElementById('adminPanel').style.display = enable ? 'flex' : 'none';
-      renderCanvas(currentCanvasItems);
+    function openAddModal(type) {
+      document.getElementById('modalItemType').value = type;
+      const contentInput = document.getElementById('modalInputContent');
+      contentInput.value = '';
+
+      const labels = {
+        text: '텍스트 내용',
+        note: '메모 내용',
+        image: '이미지 URL',
+        video: '유튜브 링크 URL'
+      };
+      document.getElementById('modalInputLabel').innerText = labels[type] || '내용';
+      document.getElementById('addModal').classList.remove('hidden');
+      document.getElementById('addModal').classList.add('flex');
     }
 
-    function escapeHtml(str) {
-      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : '';
+    function closeAddModal() {
+      document.getElementById('addModal').classList.add('hidden');
+      document.getElementById('addModal').classList.remove('flex');
     }
 
-    // 페이지 진입 시 DB 데이터 로드
-    window.addEventListener('DOMContentLoaded', () => {
-      loadItemsFromSupabase();
-    });
+    function submitNewItem() {
+      const type = document.getElementById('modalItemType').value;
+      const content = document.getElementById('modalInputContent').value.trim();
+
+      if (!content) return alert("내용을 입력해주세요.");
+
+      maxZIndex++;
+      const newItem = {
+        id: 'item_' + Date.now(),
+        type,
+        content,
+        x: 100 + (items.length * 20) % 300,
+        y: 100 + (items.length * 20) % 300,
+        width: type === 'video' ? 320 : 200,
+        height: type === 'video' ? 180 : 150,
+        z_index: maxZIndex
+      };
+
+      items.push(newItem);
+      saveItemToSupabase(newItem);
+      renderCanvas();
+      closeAddModal();
+    }
+
+    function removeItem(id, e) {
+      e.stopPropagation();
+      if (!confirm("이 항목을 삭제하시겠습니까?")) return;
+      items = items.filter(i => i.id !== id);
+      deleteItemFromSupabase(id);
+      renderCanvas();
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', loadItems);
   </script>
 </body>
 </html>
