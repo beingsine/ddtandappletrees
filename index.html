@@ -84,10 +84,10 @@
 
   <script>
     // --- Config & State ---
-    // 실제 Supabase URL과 Key로 변경하세요
-    const SUPABASE_URL = "https://your-project.supabase.co";
-    const SUPABASE_ANON_KEY = "your-anon-key";
-    
+    // ⚠️ 아래 두 항목을 본인의 Supabase 설정값으로 변경하세요!
+    const SUPABASE_URL = "https://ocqfspslmfddxzqvdygi.supabase.co"; 
+    const SUPABASE_ANON_KEY = "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";              
+
     let supabase = null;
     if (SUPABASE_URL !== "https://your-project.supabase.co" && window.supabase) {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -106,23 +106,6 @@
       };
     }
 
-    // --- LocalStorage Fallback Storage ---
-    function saveToLocalStorage() {
-      localStorage.setItem('canvas_items_backup', JSON.stringify(items));
-    }
-
-    function loadFromLocalStorage() {
-      const stored = localStorage.getItem('canvas_items_backup');
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch(e) {
-          console.error("LocalStorage parse error", e);
-        }
-      }
-      return [];
-    }
-
     // --- YouTube URL Parser ---
     function extractYouTubeId(url) {
       if (!url) return null;
@@ -131,9 +114,19 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- DB & Storage Operations ---
+    // --- Local Storage Backup Helper ---
+    function saveToLocalBackup() {
+      localStorage.setItem('archive_canvas_items', JSON.stringify(items));
+    }
+
+    function loadFromLocalBackup() {
+      const saved = localStorage.getItem('archive_canvas_items');
+      return saved ? JSON.parse(saved) : [];
+    }
+
+    // --- DB Operations ---
     const saveItemToSupabase = debounce(async (item) => {
-      saveToLocalStorage(); // 항상 LocalStorage 백업
+      saveToLocalBackup(); // 백업용 저장
 
       if (!supabase) return;
       const { error } = await supabase.from('canvas_items').upsert({
@@ -146,34 +139,33 @@
         height: item.height,
         z_index: item.z_index
       });
-      if (error) console.error("Supabase Save Error:", error.message);
-    }, 400);
+      if (error) console.error("Supabase 저장 에러:", error.message);
+    }, 300);
 
     async function deleteItemFromSupabase(id) {
-      saveToLocalStorage(); // 항상 LocalStorage 백업
+      saveToLocalBackup();
 
       if (!supabase) return;
       const { error } = await supabase.from('canvas_items').delete().eq('id', id);
-      if (error) console.error("Supabase Delete Error:", error.message);
+      if (error) console.error("Supabase 삭제 에러:", error.message);
     }
 
     async function loadItems() {
-      let loadedData = [];
+      let fetchedItems = [];
+
       if (supabase) {
         const { data, error } = await supabase.from('canvas_items').select('*');
-        if (error) {
-          console.error("Supabase Fetch Error:", error.message);
-          loadedData = loadFromLocalStorage();
-        } else if (data && data.length > 0) {
-          loadedData = data;
+        if (!error && data) {
+          fetchedItems = data;
         } else {
-          loadedData = loadFromLocalStorage();
+          console.error("Supabase 불러오기 실패 (Local 백업 사용):", error?.message);
+          fetchedItems = loadFromLocalBackup();
         }
       } else {
-        loadedData = loadFromLocalStorage();
+        fetchedItems = loadFromLocalBackup();
       }
 
-      items = loadedData;
+      items = fetchedItems;
       items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
       renderCanvas();
     }
@@ -192,34 +184,34 @@
         el.style.height = `${item.height}px`;
         el.style.zIndex = item.z_index || 1;
 
-        // Item Content Rendering
+        // Item Content
         let contentHtml = '';
         if (item.type === 'text') {
-          contentHtml = `<p class="whitespace-pre-wrap text-sm text-slate-800">${item.content}</p>`;
+          contentHtml = `<p class="whitespace-pre-wrap text-sm text-slate-800 pointer-events-none">${item.content}</p>`;
         } else if (item.type === 'note') {
-          contentHtml = `<p class="whitespace-pre-wrap text-sm text-amber-950 font-medium">${item.content}</p>`;
+          contentHtml = `<p class="whitespace-pre-wrap text-sm text-amber-950 font-medium pointer-events-none">${item.content}</p>`;
         } else if (item.type === 'image') {
-          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Image+Error';" />`;
+          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Image+Error';" />`;
         } else if (item.type === 'video') {
           const videoId = extractYouTubeId(item.content);
           if (videoId) {
-            contentHtml = `<iframe class="w-full h-full rounded-lg pointer-events-none" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+            // 방문자 모드에서는 영상 클릭이 가능하도록 pointer-events 조절
+            const pointerClass = isAdmin ? 'pointer-events-none' : 'pointer-events-auto';
+            contentHtml = `<iframe class="w-full h-full rounded-lg ${pointerClass}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
           } else {
             contentHtml = `<p class="text-xs text-red-500">잘못된 유튜브 URL입니다.</p>`;
           }
         }
 
-        // Delete Button for Admin
+        // Admin Only Elements
         const deleteBtn = isAdmin ? `
-          <button onclick="removeItem('${item.id}', event)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow">×</button>
+          <button onclick="removeItem('${item.id}', event)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow z-10">×</button>
         ` : '';
 
-        // Resize handle for Admin
         const resizeHandle = isAdmin ? `<div class="resize-handle"></div>` : '';
 
         el.innerHTML = `${deleteBtn}${contentHtml}${resizeHandle}`;
 
-        // Event Handling
         setupInteractions(el, item);
         canvas.appendChild(el);
       });
@@ -231,11 +223,12 @@
       let startX, startY, startLeft, startTop, startWidth, startHeight;
 
       const handleDown = (e) => {
+        // 클릭 시 화면 맨 앞으로 가져오기
         maxZIndex++;
         item.z_index = maxZIndex;
         el.style.zIndex = maxZIndex;
-        saveItemToSupabase(item);
 
+        // 관리자만 드래그/리사이즈 가능
         if (!isAdmin) return;
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -281,6 +274,9 @@
       };
 
       const handleUp = () => {
+        if (isDragging || isResizing) {
+          saveItemToSupabase(item);
+        }
         isDragging = false;
         isResizing = false;
         window.removeEventListener('mousemove', handleMove);
@@ -367,7 +363,7 @@
       renderCanvas();
     }
 
-    // Initialize
+    // App Initialization
     window.addEventListener('DOMContentLoaded', loadItems);
   </script>
 </body>
