@@ -84,11 +84,12 @@
 
   <script>
     // --- Config & State ---
-    const SUPABASE_URL = "https://your-project.supabase.co"; // 본인의 Supabase URL로 변경
-    const SUPABASE_ANON_KEY = "your-anon-key";              // 본인의 Supabase Anon Key로 변경
+    // 실제 Supabase URL과 Key로 변경하세요
+    const SUPABASE_URL = "https://your-project.supabase.co";
+    const SUPABASE_ANON_KEY = "your-anon-key";
     
     let supabase = null;
-    if (SUPABASE_URL !== "https://your-project.supabase.co") {
+    if (SUPABASE_URL !== "https://your-project.supabase.co" && window.supabase) {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
@@ -105,6 +106,23 @@
       };
     }
 
+    // --- LocalStorage Fallback Storage ---
+    function saveToLocalStorage() {
+      localStorage.setItem('canvas_items_backup', JSON.stringify(items));
+    }
+
+    function loadFromLocalStorage() {
+      const stored = localStorage.getItem('canvas_items_backup');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch(e) {
+          console.error("LocalStorage parse error", e);
+        }
+      }
+      return [];
+    }
+
     // --- YouTube URL Parser ---
     function extractYouTubeId(url) {
       if (!url) return null;
@@ -113,9 +131,11 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- DB Operations (with Debouncing) ---
+    // --- DB & Storage Operations ---
     const saveItemToSupabase = debounce(async (item) => {
-      if (!supabase || !isAdmin) return;
+      saveToLocalStorage(); // 항상 LocalStorage 백업
+
+      if (!supabase) return;
       const { error } = await supabase.from('canvas_items').upsert({
         id: item.id,
         type: item.type,
@@ -130,23 +150,32 @@
     }, 400);
 
     async function deleteItemFromSupabase(id) {
-      if (!supabase || !isAdmin) return;
+      saveToLocalStorage(); // 항상 LocalStorage 백업
+
+      if (!supabase) return;
       const { error } = await supabase.from('canvas_items').delete().eq('id', id);
       if (error) console.error("Supabase Delete Error:", error.message);
     }
 
     async function loadItems() {
-      if (!supabase) return;
-      const { data, error } = await supabase.from('canvas_items').select('*');
-      if (error) {
-        console.error("Supabase Fetch Error:", error.message);
-        return;
+      let loadedData = [];
+      if (supabase) {
+        const { data, error } = await supabase.from('canvas_items').select('*');
+        if (error) {
+          console.error("Supabase Fetch Error:", error.message);
+          loadedData = loadFromLocalStorage();
+        } else if (data && data.length > 0) {
+          loadedData = data;
+        } else {
+          loadedData = loadFromLocalStorage();
+        }
+      } else {
+        loadedData = loadFromLocalStorage();
       }
-      if (data) {
-        items = data;
-        items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
-        renderCanvas();
-      }
+
+      items = loadedData;
+      items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
+      renderCanvas();
     }
 
     // --- UI Render & Interactions ---
@@ -170,7 +199,7 @@
         } else if (item.type === 'note') {
           contentHtml = `<p class="whitespace-pre-wrap text-sm text-amber-950 font-medium">${item.content}</p>`;
         } else if (item.type === 'image') {
-          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" />`;
+          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Image+Error';" />`;
         } else if (item.type === 'video') {
           const videoId = extractYouTubeId(item.content);
           if (videoId) {
@@ -202,7 +231,6 @@
       let startX, startY, startLeft, startTop, startWidth, startHeight;
 
       const handleDown = (e) => {
-        // Z-Index bring to front
         maxZIndex++;
         item.z_index = maxZIndex;
         el.style.zIndex = maxZIndex;
@@ -269,7 +297,7 @@
     function toggleAdminMode() {
       if (!isAdmin) {
         const pwd = prompt("관리자 비밀번호를 입력하세요:");
-        if (pwd === "0322") { // 보안 필요시 서버 세션 기반 Auth 권장
+        if (pwd === "0322") {
           isAdmin = true;
           document.getElementById('adminBadge').classList.remove('hidden');
           document.getElementById('adminControls').classList.remove('hidden');
