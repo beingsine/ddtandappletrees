@@ -639,15 +639,23 @@
       </div>
 
       <input
+        id="emailInput"
+        class="modal-input"
+        type="email"
+        placeholder="email"
+        autocomplete="username"
+      />
+
+      <input
         id="passwordInput"
         class="modal-input"
         type="password"
         placeholder="password"
-        autocomplete="off"
+        autocomplete="current-password"
       />
 
       <div id="loginError" class="modal-error">
-        wrong password
+        email or password is incorrect
       </div>
 
       <div class="modal-actions">
@@ -748,11 +756,10 @@
 
 
     /* ============================================================
-       ADMIN PASSWORD
-       TEMPORARY TEST VERSION
+       AUTHENTICATION
     ============================================================ */
 
-    const ADMIN_PASSWORD = "0322";
+    let currentSession = null;
 
 
     /* ============================================================
@@ -791,6 +798,9 @@
 
     const addModal =
       document.getElementById("addModal");
+
+    const emailInput =
+      document.getElementById("emailInput");
 
     const passwordInput =
       document.getElementById("passwordInput");
@@ -2079,15 +2089,59 @@
        LOGIN
     ============================================================ */
 
+
+    /* ============================================================
+       AUTHENTICATION UI
+    ============================================================ */
+
+    function updateAdminUI(session) {
+
+      currentSession = session || null;
+
+      adminMode = !!currentSession;
+
+      if (adminMode) {
+
+        document.body.classList.add(
+          "admin-mode"
+        );
+
+        document.getElementById(
+          "adminOpen"
+        ).textContent =
+          "LOGOUT";
+
+        setStatus("admin");
+
+      } else {
+
+        document.body.classList.remove(
+          "admin-mode"
+        );
+
+        selectedItemId = null;
+
+        document.getElementById(
+          "adminOpen"
+        ).textContent =
+          "ADMIN";
+
+        setStatus("ready");
+      }
+
+      render();
+    }
+
+
     document
       .getElementById("adminOpen")
       .addEventListener(
         "click",
-        () => {
+        async () => {
 
           if (adminMode) {
 
-            logout();
+            await logout();
 
             return;
           }
@@ -2095,6 +2149,7 @@
           loginError.style.display =
             "none";
 
+          emailInput.value = "";
           passwordInput.value = "";
 
           loginModal.classList.add(
@@ -2102,7 +2157,7 @@
           );
 
           setTimeout(() => {
-            passwordInput.focus();
+            emailInput.focus();
           }, 100);
         }
       );
@@ -2129,6 +2184,20 @@
       );
 
 
+    emailInput
+      .addEventListener(
+        "keydown",
+        event => {
+
+          if (
+            event.key === "Enter"
+          ) {
+            passwordInput.focus();
+          }
+        }
+      );
+
+
     passwordInput
       .addEventListener(
         "keydown",
@@ -2143,145 +2212,96 @@
       );
 
 
-    function login() {
+    async function login() {
 
-      if (
-        passwordInput.value ===
-        ADMIN_PASSWORD
-      ) {
+      const email =
+        emailInput.value.trim();
 
-        adminMode = true;
+      const password =
+        passwordInput.value;
 
-        document.body.classList.add(
-          "admin-mode"
-        );
+      if (!email || !password) {
 
-        document.getElementById(
-          "adminOpen"
-        ).textContent =
-          "LOGOUT";
-
-        loginModal.classList.remove(
-          "show"
-        );
-
-        setStatus("admin");
-
-        render();
-
-      } else {
+        loginError.textContent =
+          "email and password are required";
 
         loginError.style.display =
           "block";
+
+        return;
       }
+
+      loginError.style.display =
+        "none";
+
+      setStatus("logging in...");
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+      if (error) {
+
+        console.error(error);
+
+        loginError.textContent =
+          "email or password is incorrect";
+
+        loginError.style.display =
+          "block";
+
+        setStatus("ready");
+
+        return;
+      }
+
+      updateAdminUI(data.session);
+
+      loginModal.classList.remove(
+        "show"
+      );
+
+      emailInput.value = "";
+      passwordInput.value = "";
     }
 
 
-    function logout() {
+    async function logout() {
 
-      adminMode = false;
+      const {
+        error
+      } =
+        await supabaseClient.auth.signOut();
 
-      selectedItemId = null;
+      if (error) {
 
-      document.body.classList.remove(
-        "admin-mode"
-      );
+        console.error(error);
 
-      document.getElementById(
-        "adminOpen"
-      ).textContent =
-        "ADMIN";
+        alert(
+          "로그아웃하지 못했습니다.\n\n" +
+          error.message
+        );
 
-      setStatus("ready");
+        return;
+      }
 
-      render();
+      updateAdminUI(null);
     }
 
 
     /* ============================================================
-       ADMIN BUTTONS
+       AUTH STATE
     ============================================================ */
 
-    document
-      .getElementById("addText")
-      .addEventListener(
-        "click",
-        () => openAddModal("text")
-      );
+    supabaseClient.auth.onAuthStateChange(
+      (_event, session) => {
 
-
-    document
-      .getElementById("addNote")
-      .addEventListener(
-        "click",
-        () => openAddModal("note")
-      );
-
-
-    document
-      .getElementById("addImage")
-      .addEventListener(
-        "click",
-        () => openAddModal("image")
-      );
-
-
-    document
-      .getElementById("addVideo")
-      .addEventListener(
-        "click",
-        () => openAddModal("video")
-      );
-
-
-    document
-      .getElementById("saveAll")
-      .addEventListener(
-        "click",
-        saveAll
-      );
-
-
-    document
-      .getElementById("logout")
-      .addEventListener(
-        "click",
-        logout
-      );
-
-
-    document
-      .getElementById("cancelAdd")
-      .addEventListener(
-        "click",
-        closeAddModal
-      );
-
-
-    document
-      .getElementById("createItem")
-      .addEventListener(
-        "click",
-        createNewItem
-      );
-
-
-    /* ============================================================
-       BACKGROUND CLICK
-    ============================================================ */
-
-    world.addEventListener(
-      "pointerdown",
-      event => {
-
-        if (
-          event.target === world
-        ) {
-
-          selectedItemId = null;
-
-          render();
-        }
+        updateAdminUI(session);
       }
     );
 
@@ -2290,7 +2310,22 @@
        START
     ============================================================ */
 
-    loadItems();
+    async function startApp() {
+
+      const {
+        data: {
+          session
+        }
+      } =
+        await supabaseClient.auth.getSession();
+
+      updateAdminUI(session);
+
+      await loadItems();
+    }
+
+
+    startApp();
 
   </script>
 
