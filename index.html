@@ -1970,14 +1970,40 @@
     }
 
 
+
+
+    async function persistItem(item) {
+
+      if (!adminMode || !item) return;
+
+      const { error } = await supabaseClient
+        .from("canvas_items")
+        .update({
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+          width: Math.round(item.width),
+          height: Math.round(item.height),
+          rotation: Number(item.rotation || 0),
+          z_index: Math.round(item.z_index || 1)
+        })
+        .eq("id", item.id);
+
+      if (error) {
+        console.error(error);
+        setStatus("save failed");
+      } else {
+        setStatus("saved");
+      }
+    }
+
     function stopDrag(event) {
 
       if (!dragState) {
         return;
       }
 
-      const element =
-        dragState.element;
+      const state = dragState;
+      const element = state.element;
 
       element.removeEventListener(
         "pointermove",
@@ -1985,6 +2011,9 @@
       );
 
       dragState = null;
+
+      const item = items.find(i => i.id === state.id);
+      persistItem(item);
     }
 
 
@@ -2073,12 +2102,19 @@
 
     function stopResize() {
 
+      if (!resizeState) return;
+
+      const state = resizeState;
+
       window.removeEventListener(
         "pointermove",
         handleResize
       );
 
       resizeState = null;
+
+      const item = items.find(i => i.id === state.id);
+      persistItem(item);
     }
 
 
@@ -2182,12 +2218,19 @@
 
     function stopRotate() {
 
+      if (!rotateState) return;
+
+      const state = rotateState;
+
       window.removeEventListener(
         "pointermove",
         handleRotate
       );
 
       rotateState = null;
+
+      const item = items.find(i => i.id === state.id);
+      persistItem(item);
     }
 
 
