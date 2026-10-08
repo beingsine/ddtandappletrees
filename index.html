@@ -638,6 +638,26 @@
       color: #999;
     }
 
+    .archive-delete-button {
+      display: none;
+      margin-top: 8px;
+      border: 1px solid #ddd;
+      background: white;
+      padding: 5px 7px;
+      font-size: 9px;
+      color: #999;
+      letter-spacing: .04em;
+    }
+
+    .archive-delete-button:hover {
+      color: #111;
+      border-color: #111;
+    }
+
+    body.admin-mode .archive-delete-button {
+      display: inline-block;
+    }
+
     #archiveViewer {
       display: none;
       position: fixed;
@@ -1382,9 +1402,19 @@
         date.className = "archive-date";
         date.textContent = page.created_at ? new Date(page.created_at).toLocaleString() : "";
 
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "archive-delete-button";
+        deleteButton.textContent = "DELETE";
+        deleteButton.type = "button";
+        deleteButton.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          await deleteArchivePage(page.id);
+        });
+
         card.appendChild(preview);
         card.appendChild(title);
         card.appendChild(date);
+        card.appendChild(deleteButton);
         card.addEventListener("click", () => openArchivePage(page));
         grid.appendChild(card);
       });
@@ -1394,6 +1424,39 @@
 
 
     let openedArchivePage = null;
+
+    async function deleteArchivePage(pageId) {
+      if (!adminMode || !pageId) return;
+
+      const page = archives.find(p => p.id === pageId);
+      const title = page?.title || "this archived page";
+      const ok = confirm(`"${title}" 아카이브를 삭제할까요?\n\n삭제하면 복구할 수 없습니다.`);
+      if (!ok) return;
+
+      setStatus("deleting archive...");
+
+      const { error } = await supabaseClient
+        .from("canvas_items")
+        .delete()
+        .eq("id", pageId);
+
+      if (error) {
+        console.error(error);
+        alert("아카이브를 삭제하지 못했습니다.\n\n" + error.message);
+        setStatus("delete failed");
+        return;
+      }
+
+      archives = archives.filter(p => p.id !== pageId);
+
+      if (openedArchivePage?.id === pageId) {
+        openedArchivePage = null;
+        document.getElementById("archiveViewer").classList.remove("show");
+      }
+
+      render();
+      setStatus("archive deleted");
+    }
 
     function openArchivePage(page) {
       openedArchivePage = page;
