@@ -1,18 +1,15 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
 
-  <title>Siné Kang — Archive</title>
+  <title>ddt and apple trees</title>
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -22,203 +19,185 @@
 
     html,
     body {
+      margin: 0;
       width: 100%;
       height: 100%;
-      margin: 0;
       overflow: hidden;
-      background: #fff;
+      background: white;
       color: #111;
-      font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    body {
-      user-select: none;
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
     }
 
-    /* --------------------------------
+    button {
+      cursor: pointer;
+    }
+
+    /* -------------------------
        HEADER
-    -------------------------------- */
+    ------------------------- */
 
-    #topbar {
+    #header {
       position: fixed;
+      z-index: 10000;
       top: 0;
       left: 0;
-      right: 0;
-      height: 58px;
-      z-index: 1000;
+      width: 100%;
+      height: 54px;
 
       display: flex;
       align-items: center;
       justify-content: space-between;
 
-      padding: 0 24px;
+      padding: 0 18px;
 
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(12px);
-
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid #e5e5e5;
     }
 
     #siteTitle {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      font-weight: 500;
       white-space: nowrap;
     }
 
-    #categoryBar {
+    #categories {
       display: flex;
+      gap: 6px;
       align-items: center;
-      gap: 18px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
-    .category-button {
-      appearance: none;
+    #categories::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-btn {
       border: 0;
       background: transparent;
-      padding: 4px 0;
-
-      color: #777;
-
+      padding: 6px 9px;
       font-size: 11px;
-      letter-spacing: 0.08em;
-
-      cursor: pointer;
-
-      transition:
-        color 0.2s ease,
-        opacity 0.2s ease;
+      letter-spacing: 0.06em;
+      color: #777;
     }
 
-    .category-button:hover,
-    .category-button.active {
-      color: #000;
+    .category-btn:hover {
+      color: #111;
     }
 
-    /* --------------------------------
+    .category-btn.active {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    #adminOpen {
+      border: 0;
+      background: transparent;
+      font-size: 11px;
+      color: #999;
+      padding: 6px;
+      margin-left: 8px;
+    }
+
+    #adminOpen:hover {
+      color: #111;
+    }
+
+    /* -------------------------
        CANVAS
-    -------------------------------- */
+    ------------------------- */
 
-    #viewport {
+    #canvas {
       position: fixed;
-      inset: 58px 0 0 0;
+      left: 0;
+      top: 54px;
+      right: 0;
+      bottom: 0;
 
       overflow: hidden;
-
-      background: #fff;
-
-      cursor: default;
+      background: white;
     }
 
     #world {
       position: absolute;
 
-      width: 5000px;
-      height: 5000px;
+      left: 0;
+      top: 0;
 
-      left: 50%;
-      top: 50%;
-
-      transform-origin: 0 0;
+      width: 100%;
+      height: 100%;
     }
 
-    /* --------------------------------
-       CANVAS ITEM
-    -------------------------------- */
+    /* -------------------------
+       ITEMS
+    ------------------------- */
 
-    .canvas-item {
+    .item {
       position: absolute;
 
+      user-select: none;
+      -webkit-user-select: none;
+
       transform-origin: center center;
-
-      cursor: default;
-
-      transition:
-        box-shadow 0.15s ease,
-        filter 0.15s ease;
-    }
-
-    .canvas-item.admin {
-      cursor: grab;
-    }
-
-    .canvas-item.admin:active {
-      cursor: grabbing;
-    }
-
-    .canvas-item:hover {
-      filter: none;
-    }
-
-    .canvas-item.admin:hover {
-      box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.12);
     }
 
     .item-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .item-text {
       width: 100%;
       height: 100%;
 
-      overflow: hidden;
-
-      position: relative;
-    }
-
-    /* --------------------------------
-       TEXT
-    -------------------------------- */
-
-    .text-item {
-      padding: 12px;
-
       white-space: pre-wrap;
+      word-break: break-word;
 
-      font-size: 15px;
-      line-height: 1.55;
+      font-size: 17px;
+      line-height: 1.45;
 
       color: #111;
 
       overflow: hidden;
     }
 
-    /* --------------------------------
-       NOTE
-    -------------------------------- */
+    .item-note {
+      width: 100%;
+      height: 100%;
 
-    .note-item {
-      padding: 15px;
+      padding: 14px;
 
-      background: #fff69c;
+      background: #fafafa;
+      border: 1px solid #ddd;
 
       font-size: 14px;
       line-height: 1.5;
 
-      color: #262000;
-
       overflow: hidden;
     }
 
-    /* --------------------------------
-       IMAGE
-    -------------------------------- */
+    .item-image {
+      display: block;
 
-    .image-item {
       width: 100%;
       height: 100%;
 
-      object-fit: cover;
+      object-fit: contain;
 
-      display: block;
+      pointer-events: auto;
     }
 
-    /* --------------------------------
-       VIDEO
-    -------------------------------- */
-
-    .video-item {
+    .video-frame {
       width: 100%;
       height: 100%;
 
@@ -227,223 +206,219 @@
       display: block;
     }
 
-    /* --------------------------------
-       ADMIN CONTROLS
-    -------------------------------- */
+    /* visitor mode */
+    .visitor-video {
+      pointer-events: auto;
+    }
 
-    .delete-button {
-      position: absolute;
+    /* admin mode */
+    body.admin-mode .item {
+      cursor: move;
+      outline: 1px dashed transparent;
+    }
 
-      top: -11px;
-      right: -11px;
+    body.admin-mode .item:hover {
+      outline: 1px dashed #aaa;
+    }
 
-      width: 22px;
-      height: 22px;
+    body.admin-mode .item.selected {
+      outline: 1px solid #111;
+    }
 
-      border: 0;
-      border-radius: 50%;
+    body.admin-mode .item.selected .resize-handle,
+    body.admin-mode .item.selected .rotate-handle,
+    body.admin-mode .item.selected .delete-button {
+      display: block;
+    }
 
-      background: #000;
-      color: #fff;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      font-size: 14px;
-
-      cursor: pointer;
-
-      z-index: 100;
+    body.admin-mode .video-frame {
+      pointer-events: none;
     }
 
     .resize-handle {
+      display: none;
+
       position: absolute;
+
+      width: 12px;
+      height: 12px;
 
       right: -6px;
       bottom: -6px;
 
-      width: 14px;
-      height: 14px;
-
-      background: #000;
+      background: white;
+      border: 1px solid #111;
 
       cursor: nwse-resize;
-
-      z-index: 100;
+      z-index: 20;
     }
 
     .rotate-handle {
+      display: none;
+
       position: absolute;
 
+      width: 12px;
+      height: 12px;
+
       left: 50%;
-      top: -27px;
+      top: -28px;
 
       transform: translateX(-50%);
 
-      width: 14px;
-      height: 14px;
-
       border-radius: 50%;
 
-      background: #000;
+      background: white;
+      border: 1px solid #111;
 
       cursor: grab;
-
-      z-index: 100;
+      z-index: 20;
     }
 
     .rotate-line {
+      display: none;
+
       position: absolute;
 
-      left: 50%;
-      top: -20px;
-
       width: 1px;
-      height: 20px;
+      height: 18px;
 
-      background: #000;
+      left: 50%;
+      top: -18px;
 
-      z-index: 99;
+      background: #111;
+
+      z-index: 19;
     }
 
-    /* --------------------------------
-       ADMIN PANEL
-    -------------------------------- */
+    body.admin-mode .item.selected .rotate-line {
+      display: block;
+    }
 
-    #adminPanel {
+    .delete-button {
+      display: none;
+
+      position: absolute;
+
+      top: -10px;
+      right: -10px;
+
+      width: 20px;
+      height: 20px;
+
+      padding: 0;
+
+      border-radius: 50%;
+      border: 1px solid #111;
+
+      background: white;
+
+      font-size: 12px;
+      line-height: 18px;
+
+      z-index: 30;
+    }
+
+    /* -------------------------
+       ADMIN BAR
+    ------------------------- */
+
+    #adminBar {
+      display: none;
+
       position: fixed;
+      z-index: 11000;
 
       left: 50%;
       bottom: 18px;
 
       transform: translateX(-50%);
 
-      z-index: 2000;
+      padding: 7px 9px;
 
-      display: none;
+      background: rgba(255, 255, 255, 0.97);
 
-      align-items: center;
+      border: 1px solid #ccc;
+
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
       gap: 5px;
-
-      padding: 7px;
-
-      border-radius: 12px;
-
-      background: rgba(20, 20, 20, 0.95);
-
-      box-shadow:
-        0 15px 50px rgba(0, 0, 0, 0.2);
+      align-items: center;
     }
 
-    #adminPanel.show {
+    body.admin-mode #adminBar {
       display: flex;
     }
 
-    .admin-tool {
+    .admin-btn {
       border: 0;
+      background: white;
 
-      padding: 7px 10px;
-
-      border-radius: 7px;
-
-      background: transparent;
-      color: #fff;
-
-      font-size: 11px;
-
-      cursor: pointer;
-    }
-
-    .admin-tool:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    .admin-divider {
-      width: 1px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* --------------------------------
-       ADMIN LOGIN
-    -------------------------------- */
-
-    #loginButton {
-      position: fixed;
-
-      right: 20px;
-      bottom: 20px;
-
-      z-index: 2100;
-
-      border: 0;
-
-      background: transparent;
-
-      color: rgba(0, 0, 0, 0.25);
+      padding: 7px 9px;
 
       font-size: 10px;
+      letter-spacing: 0.04em;
 
-      cursor: pointer;
+      color: #333;
     }
 
-    #loginButton:hover {
-      color: #000;
+    .admin-btn:hover {
+      background: #f1f1f1;
     }
 
-    /* --------------------------------
-       MODAL
-    -------------------------------- */
+    .admin-separator {
+      width: 1px;
+      height: 18px;
+      background: #ddd;
+      margin: 0 3px;
+    }
 
-    #modal {
+    #saveStatus {
+      font-size: 10px;
+      color: #777;
+      margin: 0 5px;
+      white-space: nowrap;
+    }
+
+    /* -------------------------
+       LOGIN MODAL
+    ------------------------- */
+
+    #loginModal,
+    #addModal {
+      display: none;
+
       position: fixed;
+      z-index: 20000;
+
       inset: 0;
 
-      z-index: 3000;
-
-      display: none;
+      background: rgba(255, 255, 255, 0.75);
 
       align-items: center;
       justify-content: center;
-
-      background: rgba(0, 0, 0, 0.25);
-
-      backdrop-filter: blur(5px);
     }
 
-    #modal.show {
+    #loginModal.show,
+    #addModal.show {
       display: flex;
     }
 
     .modal-box {
-      width: min(430px, calc(100vw - 32px));
+      width: min(420px, calc(100vw - 36px));
+
+      background: white;
+
+      border: 1px solid #ccc;
 
       padding: 24px;
 
-      background: #fff;
-
-      border-radius: 14px;
-
-      box-shadow:
-        0 25px 70px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12);
     }
 
     .modal-title {
-      margin-bottom: 20px;
-
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .modal-label {
-      display: block;
-
-      margin-bottom: 6px;
-
-      font-size: 11px;
-
-      color: #666;
+      font-size: 14px;
+      margin-bottom: 18px;
     }
 
     .modal-input,
@@ -451,13 +426,13 @@
     .modal-textarea {
       width: 100%;
 
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
 
-      border-radius: 7px;
+      background: white;
 
-      padding: 9px 10px;
+      padding: 10px 11px;
 
-      font-size: 13px;
+      margin-bottom: 10px;
 
       outline: none;
     }
@@ -469,103 +444,94 @@
     }
 
     .modal-textarea {
-      min-height: 110px;
+      min-height: 130px;
       resize: vertical;
     }
 
     .modal-row {
-      margin-bottom: 15px;
+      display: flex;
+      gap: 8px;
     }
 
-    .modal-buttons {
+    .modal-row > * {
+      flex: 1;
+    }
+
+    .modal-actions {
       display: flex;
       justify-content: flex-end;
       gap: 7px;
-
-      margin-top: 20px;
+      margin-top: 12px;
     }
 
-    .modal-button {
-      border: 0;
+    .modal-btn {
+      padding: 8px 12px;
 
-      padding: 9px 14px;
+      border: 1px solid #ccc;
 
-      border-radius: 7px;
+      background: white;
+
+      font-size: 11px;
+    }
+
+    .modal-btn.primary {
+      background: #111;
+      color: white;
+      border-color: #111;
+    }
+
+    .modal-error {
+      display: none;
+      color: #c00;
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    /* -------------------------
+       EMPTY MESSAGE
+    ------------------------- */
+
+    #emptyMessage {
+      position: absolute;
+
+      left: 50%;
+      top: 50%;
+
+      transform: translate(-50%, -50%);
+
+      color: #aaa;
 
       font-size: 12px;
 
-      cursor: pointer;
-    }
-
-    .modal-cancel {
-      background: #eee;
-      color: #333;
-    }
-
-    .modal-submit {
-      background: #111;
-      color: #fff;
-    }
-
-    /* --------------------------------
-       ADMIN BADGE
-    -------------------------------- */
-
-    #adminBadge {
-      position: fixed;
-
-      top: 68px;
-      right: 20px;
-
-      z-index: 1500;
+      pointer-events: none;
 
       display: none;
-
-      padding: 5px 8px;
-
-      background: #111;
-      color: #fff;
-
-      border-radius: 5px;
-
-      font-size: 9px;
-
-      letter-spacing: 0.08em;
     }
 
-    #adminBadge.show {
-      display: block;
-    }
-
-    /* --------------------------------
+    /* -------------------------
        MOBILE
-    -------------------------------- */
+    ------------------------- */
 
     @media (max-width: 700px) {
-      #topbar {
-        height: 50px;
-        padding: 0 14px;
+      #header {
+        height: auto;
+        min-height: 54px;
+        padding: 9px 12px;
+        flex-wrap: wrap;
+        gap: 3px;
       }
 
-      #viewport {
-        inset: 50px 0 0 0;
+      #categories {
+        order: 3;
+        width: 100%;
+        padding-bottom: 2px;
       }
 
-      #categoryBar {
-        gap: 10px;
-        overflow-x: auto;
-        max-width: 65vw;
+      #canvas {
+        top: 88px;
       }
 
-      .category-button {
-        font-size: 9px;
-      }
-
-      #siteTitle {
-        font-size: 11px;
-      }
-
-      #adminPanel {
+      #adminBar {
         max-width: calc(100vw - 20px);
         overflow-x: auto;
       }
@@ -575,271 +541,130 @@
 
 <body>
 
-  <!-- =========================================
-       HEADER
-  ========================================== -->
-
-  <header id="topbar">
+  <!-- HEADER -->
+  <header id="header">
 
     <div id="siteTitle">
-      SINÉ KANG
+      ddt and apple trees
     </div>
 
-    <nav id="categoryBar">
-      <button class="category-button active" data-category="all">
+    <nav id="categories">
+
+      <button class="category-btn active" data-category="all">
         ALL
       </button>
 
-      <button class="category-button" data-category="writing">
+      <button class="category-btn" data-category="writing">
         WRITING
       </button>
 
-      <button class="category-button" data-category="theater">
+      <button class="category-btn" data-category="theater">
         THEATER
       </button>
 
-      <button class="category-button" data-category="image">
+      <button class="category-btn" data-category="image">
         IMAGE
       </button>
 
-      <button class="category-button" data-category="video">
+      <button class="category-btn" data-category="video">
         VIDEO
       </button>
 
-      <button class="category-button" data-category="archive">
+      <button class="category-btn" data-category="archive">
         ARCHIVE
       </button>
+
     </nav>
+
+    <button id="adminOpen">
+      ADMIN
+    </button>
 
   </header>
 
 
-  <!-- =========================================
-       CANVAS VIEWPORT
-  ========================================== -->
-
-  <main id="viewport">
-
+  <!-- CANVAS -->
+  <main id="canvas">
     <div id="world"></div>
 
+    <div id="emptyMessage">
+      nothing here yet
+    </div>
   </main>
 
 
-  <!-- =========================================
-       ADMIN BADGE
-  ========================================== -->
+  <!-- ADMIN BAR -->
+  <div id="adminBar">
 
-  <div id="adminBadge">
-    ADMIN MODE
-  </div>
-
-
-  <!-- =========================================
-       ADMIN PANEL
-  ========================================== -->
-
-  <div id="adminPanel">
-
-    <button
-      class="admin-tool"
-      onclick="openAddModal('text')"
-    >
+    <button class="admin-btn" id="addText">
       + TEXT
     </button>
 
-    <button
-      class="admin-tool"
-      onclick="openAddModal('note')"
-    >
+    <button class="admin-btn" id="addNote">
       + NOTE
     </button>
 
-    <button
-      class="admin-tool"
-      onclick="openAddModal('image')"
-    >
+    <button class="admin-btn" id="addImage">
       + IMAGE
     </button>
 
-    <button
-      class="admin-tool"
-      onclick="openAddModal('video')"
-    >
+    <button class="admin-btn" id="addVideo">
       + VIDEO
     </button>
 
-    <div class="admin-divider"></div>
+    <div class="admin-separator"></div>
 
-    <button
-      class="admin-tool"
-      onclick="saveAllItems()"
-    >
+    <button class="admin-btn" id="saveAll">
       SAVE
     </button>
 
-    <button
-      class="admin-tool"
-      onclick="logoutAdmin()"
-    >
+    <button class="admin-btn" id="logout">
       LOGOUT
     </button>
+
+    <span id="saveStatus">
+      ready
+    </span>
 
   </div>
 
 
-  <!-- =========================================
-       LOGIN BUTTON
-  ========================================== -->
-
-  <button id="loginButton" onclick="openLoginModal()">
-    admin
-  </button>
-
-
-  <!-- =========================================
-       MODAL
-  ========================================== -->
-
-  <div id="modal">
+  <!-- LOGIN -->
+  <div id="loginModal">
 
     <div class="modal-box">
 
-      <div id="modalTitle" class="modal-title">
-        Add Item
+      <div class="modal-title">
+        administrator
       </div>
 
+      <input
+        id="passwordInput"
+        class="modal-input"
+        type="password"
+        placeholder="password"
+        autocomplete="off"
+      />
 
-      <!-- LOGIN -->
-
-      <div id="loginForm">
-
-        <div class="modal-row">
-
-          <label class="modal-label">
-            Password
-          </label>
-
-          <input
-            id="passwordInput"
-            class="modal-input"
-            type="password"
-            autocomplete="current-password"
-          />
-
-        </div>
-
-        <div class="modal-buttons">
-
-          <button
-            class="modal-button modal-cancel"
-            onclick="closeModal()"
-          >
-            Cancel
-          </button>
-
-          <button
-            class="modal-button modal-submit"
-            onclick="loginAdmin()"
-          >
-            Login
-          </button>
-
-        </div>
-
+      <div id="loginError" class="modal-error">
+        wrong password
       </div>
 
+      <div class="modal-actions">
 
-      <!-- ADD ITEM -->
+        <button
+          class="modal-btn"
+          id="cancelLogin"
+        >
+          CANCEL
+        </button>
 
-      <div id="addForm" style="display:none;">
-
-        <div class="modal-row">
-
-          <label class="modal-label">
-            Type
-          </label>
-
-          <select
-            id="itemType"
-            class="modal-select"
-          >
-            <option value="text">Text</option>
-            <option value="note">Note</option>
-            <option value="image">Image</option>
-            <option value="video">YouTube</option>
-          </select>
-
-        </div>
-
-
-        <div class="modal-row">
-
-          <label class="modal-label">
-            Category
-          </label>
-
-          <select
-            id="itemCategory"
-            class="modal-select"
-          >
-            <option value="writing">Writing</option>
-            <option value="theater">Theater</option>
-            <option value="image">Image</option>
-            <option value="video">Video</option>
-            <option value="archive">Archive</option>
-          </select>
-
-        </div>
-
-
-        <div class="modal-row">
-
-          <label class="modal-label">
-            Content
-          </label>
-
-          <textarea
-            id="itemContent"
-            class="modal-textarea"
-            placeholder="텍스트 또는 URL"
-          ></textarea>
-
-        </div>
-
-
-        <div class="modal-row">
-
-          <label class="modal-label">
-            Title
-          </label>
-
-          <input
-            id="itemTitle"
-            class="modal-input"
-            type="text"
-            placeholder="Optional"
-          />
-
-        </div>
-
-
-        <div class="modal-buttons">
-
-          <button
-            class="modal-button modal-cancel"
-            onclick="closeModal()"
-          >
-            Cancel
-          </button>
-
-          <button
-            class="modal-button modal-submit"
-            onclick="createItem()"
-          >
-            Add
-          </button>
-
-        </div>
+        <button
+          class="modal-btn primary"
+          id="loginButton"
+        >
+          ENTER
+        </button>
 
       </div>
 
@@ -848,540 +673,382 @@
   </div>
 
 
-<script>
-
-/* =====================================================
-   CONFIG
-===================================================== */
-
-const SUPABASE_URL =
-  "https://ocqfspslmfddxzqvdygi.supabase.co";
-
-const SUPABASE_ANON_KEY =
-  "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";
-
-
-/*
-  IMPORTANT
-
-  실제 서비스에서는 비밀번호를 여기에 넣지 말 것.
-
-  아래 LOGIN은 현재 테스트용이다.
-  실제 운영에서는 Supabase Auth로 교체해야 한다.
-*/
-
-const DEV_ADMIN_PASSWORD = "0322";
-
-
-/* =====================================================
-   SUPABASE
-===================================================== */
-
-const supabaseClient =
-  window.supabase &&
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-
-/* =====================================================
-   STATE
-===================================================== */
-
-let items = [];
-
-let isAdmin = false;
-
-let currentCategory = "all";
-
-let maxZIndex = 1;
-
-let activeDrag = null;
-
-let activeResize = null;
-
-let activeRotate = null;
-
-
-/* =====================================================
-   LOCAL STORAGE
-===================================================== */
-
-const LOCAL_KEY =
-  "sine_kang_archive_items";
-
-
-function saveLocal() {
-
-  localStorage.setItem(
-    LOCAL_KEY,
-    JSON.stringify(items)
-  );
-
-}
-
-
-function loadLocal() {
-
-  try {
-
-    return JSON.parse(
-      localStorage.getItem(LOCAL_KEY)
-    ) || [];
-
-  } catch {
-
-    return [];
-
-  }
-
-}
-
-
-/* =====================================================
-   ID
-===================================================== */
-
-function createId() {
-
-  return (
-    Date.now().toString(36) +
-    Math.random().toString(36).slice(2, 8)
-  );
-
-}
-
-
-/* =====================================================
-   YOUTUBE
-===================================================== */
-
-function extractYouTubeId(url) {
-
-  if (!url) return null;
-
-  try {
-
-    const parsed =
-      new URL(url);
-
-    if (
-      parsed.hostname.includes("youtu.be")
-    ) {
-
-      return parsed.pathname
-        .replace("/", "")
-        .slice(0, 11);
-
-    }
-
-    if (
-      parsed.hostname.includes("youtube.com")
-    ) {
-
-      if (
-        parsed.pathname === "/watch"
-      ) {
-
-        return parsed.searchParams.get("v");
-
-      }
-
-      if (
-        parsed.pathname.startsWith("/shorts/")
-      ) {
-
-        return parsed.pathname
-          .split("/")[2]
-          ?.slice(0, 11);
-
-      }
-
-      if (
-        parsed.pathname.startsWith("/embed/")
-      ) {
-
-        return parsed.pathname
-          .split("/")[2]
-          ?.slice(0, 11);
-
-      }
-
-    }
-
-  } catch {
-
-    return null;
-
-  }
-
-  return null;
-
-}
-
-
-/* =====================================================
-   LOAD
-===================================================== */
-
-async function loadItems() {
-
-  let loaded = [];
-
-  if (supabaseClient) {
-
-    const {
-      data,
-      error
-    } = await supabaseClient
-      .from("canvas_items")
-      .select("*")
-      .order("z_index", {
-        ascending: true
-      });
-
-    if (!error && data) {
-
-      loaded = data;
-
-    }
-
-  }
-
-  /*
-    Supabase에 데이터가 없으면
-    localStorage를 백업으로 사용.
-  */
-
-  if (!loaded.length) {
-
-    loaded = loadLocal();
-
-  }
-
-  items = loaded.map(normalizeItem);
-
-  items.forEach(item => {
-
-    maxZIndex =
-      Math.max(
-        maxZIndex,
-        Number(item.z_index) || 1
+  <!-- ADD ITEM -->
+  <div id="addModal">
+
+    <div class="modal-box">
+
+      <div class="modal-title" id="addModalTitle">
+        add item
+      </div>
+
+      <input
+        id="itemTitle"
+        class="modal-input"
+        placeholder="title (optional)"
+      />
+
+      <select
+        id="itemCategory"
+        class="modal-select"
+      >
+        <option value="archive">ARCHIVE</option>
+        <option value="writing">WRITING</option>
+        <option value="theater">THEATER</option>
+        <option value="image">IMAGE</option>
+        <option value="video">VIDEO</option>
+      </select>
+
+      <textarea
+        id="itemContent"
+        class="modal-textarea"
+        placeholder=""
+      ></textarea>
+
+      <div class="modal-actions">
+
+        <button
+          class="modal-btn"
+          id="cancelAdd"
+        >
+          CANCEL
+        </button>
+
+        <button
+          class="modal-btn primary"
+          id="createItem"
+        >
+          ADD
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* ============================================================
+       SUPABASE
+    ============================================================ */
+
+    const SUPABASE_URL =
+      "https://ocqfspslmfddxzqvdygi.supabase.co";
+
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_ntO5tHSW-9G-yil3oQ_r8hwxyhI";
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
       );
 
-  });
 
-  renderCanvas();
+    /* ============================================================
+       ADMIN PASSWORD
+       TEMPORARY TEST VERSION
+    ============================================================ */
 
-}
+    const ADMIN_PASSWORD = "0322";
 
 
-/* =====================================================
-   NORMALIZE
-===================================================== */
+    /* ============================================================
+       STATE
+    ============================================================ */
 
-function normalizeItem(item) {
+    let items = [];
 
-  return {
+    let activeCategory = "all";
 
-    id:
-      item.id || createId(),
+    let adminMode = false;
 
-    type:
-      item.type || "text",
+    let selectedItemId = null;
 
-    content:
-      item.content || "",
+    let addingType = null;
 
-    title:
-      item.title || "",
+    let dragState = null;
 
-    category:
-      item.category || item.type || "archive",
+    let resizeState = null;
 
-    x:
-      Number(item.x) || 0,
+    let rotateState = null;
 
-    y:
-      Number(item.y) || 0,
 
-    width:
-      Number(item.width) || 240,
+    /* ============================================================
+       ELEMENTS
+    ============================================================ */
 
-    height:
-      Number(item.height) || 160,
+    const world =
+      document.getElementById("world");
 
-    rotation:
-      Number(item.rotation) || 0,
+    const emptyMessage =
+      document.getElementById("emptyMessage");
 
-    z_index:
-      Number(item.z_index) || 1
+    const loginModal =
+      document.getElementById("loginModal");
 
-  };
+    const addModal =
+      document.getElementById("addModal");
 
-}
+    const passwordInput =
+      document.getElementById("passwordInput");
 
+    const loginError =
+      document.getElementById("loginError");
 
-/* =====================================================
-   SAVE ITEM
-===================================================== */
+    const itemTitle =
+      document.getElementById("itemTitle");
 
-async function saveItem(item) {
+    const itemCategory =
+      document.getElementById("itemCategory");
 
-  saveLocal();
+    const itemContent =
+      document.getElementById("itemContent");
 
-  if (!supabaseClient) return;
+    const addModalTitle =
+      document.getElementById("addModalTitle");
 
-  const {
-    error
-  } = await supabaseClient
-    .from("canvas_items")
-    .upsert({
+    const saveStatus =
+      document.getElementById("saveStatus");
 
-      id: item.id,
 
-      type: item.type,
+    /* ============================================================
+       UTILS
+    ============================================================ */
 
-      content: item.content,
-
-      title: item.title,
-
-      category: item.category,
-
-      x: item.x,
-
-      y: item.y,
-
-      width: item.width,
-
-      height: item.height,
-
-      rotation: item.rotation,
-
-      z_index: item.z_index
-
-    });
-
-  if (error) {
-
-    console.error(
-      "Supabase save error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   SAVE ALL
-===================================================== */
-
-async function saveAllItems() {
-
-  for (const item of items) {
-
-    await saveItem(item);
-
-  }
-
-}
-
-
-/* =====================================================
-   DELETE
-===================================================== */
-
-async function deleteItem(item) {
-
-  items =
-    items.filter(
-      x => x.id !== item.id
-    );
-
-  saveLocal();
-
-  if (supabaseClient) {
-
-    await supabaseClient
-      .from("canvas_items")
-      .delete()
-      .eq("id", item.id);
-
-  }
-
-  renderCanvas();
-
-}
-
-
-/* =====================================================
-   CREATE ITEM
-===================================================== */
-
-function createItem() {
-
-  if (!isAdmin) return;
-
-  const type =
-    document.getElementById(
-      "itemType"
-    ).value;
-
-  const category =
-    document.getElementById(
-      "itemCategory"
-    ).value;
-
-  const content =
-    document.getElementById(
-      "itemContent"
-    ).value.trim();
-
-  const title =
-    document.getElementById(
-      "itemTitle"
-    ).value.trim();
-
-
-  if (!content) {
-
-    alert(
-      "내용을 입력하세요."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    type === "video" &&
-    !extractYouTubeId(content)
-  ) {
-
-    alert(
-      "올바른 YouTube URL을 입력하세요."
-    );
-
-    return;
-
-  }
-
-
-  maxZIndex++;
-
-
-  const item = {
-
-    id: createId(),
-
-    type,
-
-    content,
-
-    title,
-
-    category,
-
-    x:
-      200 +
-      Math.random() * 300,
-
-    y:
-      150 +
-      Math.random() * 200,
-
-    width:
-      type === "text" ||
-      type === "note"
-        ? 260
-        : 320,
-
-    height:
-      type === "text" ||
-      type === "note"
-        ? 180
-        : 220,
-
-    rotation:
-      Math.round(
-        (Math.random() * 6 - 3) * 10
-      ) / 10,
-
-    z_index:
-      maxZIndex
-
-  };
-
-
-  items.push(item);
-
-  saveItem(item);
-
-  closeModal();
-
-  renderCanvas();
-
-}
-
-
-/* =====================================================
-   RENDER
-===================================================== */
-
-function renderCanvas() {
-
-  const world =
-    document.getElementById(
-      "world"
-    );
-
-  world.innerHTML = "";
-
-
-  const visibleItems =
-    items.filter(item => {
-
-      if (
-        currentCategory === "all"
-      ) {
-
-        return true;
-
-      }
-
+    function makeId() {
       return (
-        item.category ===
-        currentCategory
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2)
       );
+    }
 
-    });
+
+    function escapeText(value) {
+      return String(value ?? "");
+    }
 
 
-  visibleItems.forEach(
-    item => {
+    function youtubeId(url) {
+
+      if (!url) return null;
+
+      try {
+
+        const parsed =
+          new URL(url.trim());
+
+        if (
+          parsed.hostname.includes("youtube.com")
+        ) {
+
+          if (
+            parsed.pathname === "/watch"
+          ) {
+            return parsed.searchParams.get("v");
+          }
+
+          if (
+            parsed.pathname.startsWith("/shorts/")
+          ) {
+            return parsed.pathname
+              .split("/")[2];
+          }
+
+          if (
+            parsed.pathname.startsWith("/embed/")
+          ) {
+            return parsed.pathname
+              .split("/")[2];
+          }
+        }
+
+        if (
+          parsed.hostname === "youtu.be"
+        ) {
+          return parsed.pathname
+            .slice(1)
+            .split("?")[0];
+        }
+
+      } catch (error) {
+        return null;
+      }
+
+      return null;
+    }
+
+
+    function categoryForType(type) {
+
+      if (type === "text") {
+        return "writing";
+      }
+
+      if (type === "note") {
+        return "archive";
+      }
+
+      if (type === "image") {
+        return "image";
+      }
+
+      if (type === "video") {
+        return "video";
+      }
+
+      return "archive";
+    }
+
+
+    function defaultSize(type) {
+
+      if (type === "image") {
+        return {
+          width: 360,
+          height: 260
+        };
+      }
+
+      if (type === "video") {
+        return {
+          width: 480,
+          height: 300
+        };
+      }
+
+      if (type === "note") {
+        return {
+          width: 280,
+          height: 180
+        };
+      }
+
+      return {
+        width: 280,
+        height: 150
+      };
+    }
+
+
+    function setStatus(text) {
+      saveStatus.textContent = text;
+    }
+
+
+    /* ============================================================
+       LOAD
+    ============================================================ */
+
+    async function loadItems() {
+
+      setStatus("loading...");
+
+      const {
+        data,
+        error
+      } = await supabaseClient
+        .from("canvas_items")
+        .select("*")
+        .order("z_index", {
+          ascending: true
+        });
+
+      if (error) {
+
+        console.error(error);
+
+        setStatus("database error");
+
+        alert(
+          "Supabase에서 작품을 불러오지 못했습니다.\n\n" +
+          error.message
+        );
+
+        return;
+      }
+
+      items = (data || []).map(item => ({
+        id: item.id,
+        type: item.type,
+        content: item.content || "",
+        title: item.title || "",
+        category:
+          item.category ||
+          categoryForType(item.type),
+
+        x: Number(item.x ?? 0),
+        y: Number(item.y ?? 0),
+
+        width: Number(item.width ?? 200),
+        height: Number(item.height ?? 150),
+
+        z_index: Number(item.z_index ?? 1),
+
+        rotation:
+          Number(item.rotation ?? 0)
+      }));
+
+      render();
+
+      setStatus("ready");
+    }
+
+
+    /* ============================================================
+       RENDER
+    ============================================================ */
+
+    function render() {
+
+      world.innerHTML = "";
+
+      const visibleItems =
+        items.filter(item => {
+
+          if (
+            activeCategory === "all"
+          ) {
+            return true;
+          }
+
+          return (
+            item.category === activeCategory
+          );
+        });
+
+      emptyMessage.style.display =
+        visibleItems.length === 0
+          ? "block"
+          : "none";
+
+      visibleItems.forEach(item => {
+
+        const el =
+          createItemElement(item);
+
+        world.appendChild(el);
+
+      });
+    }
+
+
+    function createItemElement(item) {
 
       const el =
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
+      el.className = "item";
 
-      el.className =
-        "canvas-item" +
-        (
-          isAdmin
-            ? " admin"
-            : ""
-        );
+      if (
+        selectedItemId === item.id
+      ) {
+        el.classList.add("selected");
+      }
 
-
-      el.dataset.id =
-        item.id;
-
+      el.dataset.id = item.id;
 
       el.style.left =
         `${item.x}px`;
@@ -1396,1018 +1063,1236 @@ function renderCanvas() {
         `${item.height}px`;
 
       el.style.zIndex =
-        item.z_index;
+        String(item.z_index || 1);
 
       el.style.transform =
-        `rotate(${item.rotation}deg)`;
+        `rotate(${item.rotation || 0}deg)`;
 
 
       const inner =
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
       inner.className =
         "item-inner";
 
 
-      /* --------------------------------
-         TEXT
-      -------------------------------- */
+      /* TEXT */
 
-      if (
-        item.type === "text"
-      ) {
+      if (item.type === "text") {
 
-        inner.className +=
-          " text-item";
+        const text =
+          document.createElement("div");
 
-        inner.textContent =
-          item.content;
+        text.className =
+          "item-text";
 
+        text.textContent =
+          escapeText(item.content);
+
+        inner.appendChild(text);
       }
 
 
-      /* --------------------------------
-         NOTE
-      -------------------------------- */
+      /* NOTE */
 
-      else if (
-        item.type === "note"
-      ) {
+      else if (item.type === "note") {
 
-        inner.className +=
-          " note-item";
+        const note =
+          document.createElement("div");
 
-        inner.textContent =
-          item.content;
+        note.className =
+          "item-note";
 
+        note.textContent =
+          escapeText(item.content);
+
+        inner.appendChild(note);
       }
 
 
-      /* --------------------------------
-         IMAGE
-      -------------------------------- */
+      /* IMAGE */
 
-      else if (
-        item.type === "image"
-      ) {
+      else if (item.type === "image") {
 
-        const img =
-          document.createElement(
-            "img"
-          );
+        const image =
+          document.createElement("img");
 
-        img.className =
-          "image-item";
+        image.className =
+          "item-image";
 
-        img.src =
+        image.src =
           item.content;
 
-        img.alt =
-          item.title || "";
+        image.alt =
+          item.title || "image";
 
-        img.draggable =
-          false;
+        image.draggable = false;
 
-        inner.appendChild(
-          img
-        );
+        image.onerror = () => {
+          image.style.opacity = "0.25";
+        };
 
+        inner.appendChild(image);
       }
 
 
-      /* --------------------------------
-         VIDEO
-      -------------------------------- */
+      /* VIDEO */
 
-      else if (
-        item.type === "video"
-      ) {
+      else if (item.type === "video") {
 
         const videoId =
-          extractYouTubeId(
-            item.content
-          );
+          youtubeId(item.content);
 
         if (videoId) {
 
           const iframe =
-            document.createElement(
-              "iframe"
-            );
+            document.createElement("iframe");
 
           iframe.className =
-            "video-item";
+            "video-frame";
 
           iframe.src =
-            `https://www.youtube.com/embed/${videoId}?rel=0`;
+            `https://www.youtube.com/embed/${videoId}`;
+
+          iframe.allow =
+            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 
           iframe.allowFullscreen =
             true;
 
-          iframe.setAttribute(
-            "frameborder",
-            "0"
-          );
+          inner.appendChild(iframe);
 
-          /*
-            관리자 드래그를 위해
-            iframe 자체는 클릭을 막는다.
-          */
+        } else {
 
-          if (isAdmin) {
+          const error =
+            document.createElement("div");
 
-            iframe.style.pointerEvents =
-              "none";
+          error.className =
+            "item-note";
 
-          }
+          error.textContent =
+            "Invalid YouTube URL";
 
-          inner.appendChild(
-            iframe
-          );
-
+          inner.appendChild(error);
         }
-
       }
 
 
-      el.appendChild(
-        inner
-      );
+      el.appendChild(inner);
 
 
-      /* --------------------------------
-         ADMIN CONTROLS
-      -------------------------------- */
+      /* ADMIN CONTROLS */
 
-      if (isAdmin) {
+      const resize =
+        document.createElement("div");
 
-        const deleteButton =
-          document.createElement(
-            "button"
-          );
+      resize.className =
+        "resize-handle";
 
-        deleteButton.className =
-          "delete-button";
-
-        deleteButton.textContent =
-          "×";
-
-        deleteButton.title =
-          "Delete";
-
-        deleteButton.addEventListener(
-          "pointerdown",
-          e => {
-
-            e.stopPropagation();
-
-          }
-        );
-
-        deleteButton.addEventListener(
-          "click",
-          e => {
-
-            e.stopPropagation();
-
-            if (
-              confirm(
-                "이 항목을 삭제할까요?"
-              )
-            ) {
-
-              deleteItem(item);
-
-            }
-
-          }
-        );
+      el.appendChild(resize);
 
 
-        const resizeHandle =
-          document.createElement(
-            "div"
-          );
+      const rotateLine =
+        document.createElement("div");
 
-        resizeHandle.className =
-          "resize-handle";
+      rotateLine.className =
+        "rotate-line";
 
-
-        const rotateHandle =
-          document.createElement(
-            "div"
-          );
-
-        rotateHandle.className =
-          "rotate-handle";
+      el.appendChild(rotateLine);
 
 
-        const rotateLine =
-          document.createElement(
-            "div"
-          );
+      const rotate =
+        document.createElement("div");
 
-        rotateLine.className =
-          "rotate-line";
+      rotate.className =
+        "rotate-handle";
 
-
-        el.appendChild(
-          deleteButton
-        );
-
-        el.appendChild(
-          resizeHandle
-        );
-
-        el.appendChild(
-          rotateLine
-        );
-
-        el.appendChild(
-          rotateHandle
-        );
+      el.appendChild(rotate);
 
 
-        resizeHandle.addEventListener(
-          "pointerdown",
-          e => {
+      const deleteButton =
+        document.createElement("button");
 
-            e.stopPropagation();
+      deleteButton.className =
+        "delete-button";
 
-            startResize(
-              e,
-              item,
-              el
-            );
+      deleteButton.textContent =
+        "×";
 
-          }
-        );
+      el.appendChild(deleteButton);
 
 
-        rotateHandle.addEventListener(
-          "pointerdown",
-          e => {
-
-            e.stopPropagation();
-
-            startRotate(
-              e,
-              item,
-              el
-            );
-
-          }
-        );
-
-      }
-
-
-      /*
-        관리자만 드래그 가능
-      */
-
-      if (isAdmin) {
-
-        el.addEventListener(
-          "pointerdown",
-          e => {
-
-            if (
-              e.target.classList.contains(
-                "delete-button"
-              ) ||
-              e.target.classList.contains(
-                "resize-handle"
-              ) ||
-              e.target.classList.contains(
-                "rotate-handle"
-              )
-            ) {
-
-              return;
-
-            }
-
-            startDrag(
-              e,
-              item,
-              el
-            );
-
-          }
-        );
-
-      }
-
-
-      /*
-        아이템 클릭 → 앞으로
-      */
+      /* EVENTS */
 
       el.addEventListener(
         "pointerdown",
-        () => {
+        event => {
 
-          if (!isAdmin) return;
+          if (!adminMode) {
+            return;
+          }
 
-          maxZIndex++;
+          if (
+            event.target === resize ||
+            event.target === rotate ||
+            event.target === deleteButton
+          ) {
+            return;
+          }
 
-          item.z_index =
-            maxZIndex;
+          selectItem(item.id);
 
-          el.style.zIndex =
-            maxZIndex;
-
+          startDrag(
+            event,
+            item,
+            el
+          );
         }
       );
 
 
-      world.appendChild(
-        el
+      resize.addEventListener(
+        "pointerdown",
+        event => {
+
+          if (!adminMode) {
+            return;
+          }
+
+          event.stopPropagation();
+
+          selectItem(item.id);
+
+          startResize(
+            event,
+            item
+          );
+        }
       );
 
-    });
 
-}
+      rotate.addEventListener(
+        "pointerdown",
+        event => {
 
+          if (!adminMode) {
+            return;
+          }
 
-/* =====================================================
-   DRAG
-===================================================== */
+          event.stopPropagation();
 
-function startDrag(
-  e,
-  item,
-  el
-) {
+          selectItem(item.id);
 
-  if (!isAdmin) return;
-
-  e.preventDefault();
-
-  const rect =
-    document
-      .getElementById(
-        "world"
-      )
-      .getBoundingClientRect();
-
-
-  activeDrag = {
-
-    item,
-
-    el,
-
-    startPointerX:
-      e.clientX,
-
-    startPointerY:
-      e.clientY,
-
-    startX:
-      item.x,
-
-    startY:
-      item.y
-
-  };
-
-
-  el.setPointerCapture(
-    e.pointerId
-  );
-
-  el.addEventListener(
-    "pointermove",
-    dragMove
-  );
-
-  el.addEventListener(
-    "pointerup",
-    stopDrag,
-    {
-      once: true
-    }
-  );
-
-}
-
-
-function dragMove(e) {
-
-  if (!activeDrag) return;
-
-  const d =
-    activeDrag;
-
-
-  const dx =
-    e.clientX -
-    d.startPointerX;
-
-  const dy =
-    e.clientY -
-    d.startPointerY;
-
-
-  d.item.x =
-    d.startX + dx;
-
-  d.item.y =
-    d.startY + dy;
-
-
-  d.el.style.left =
-    `${d.item.x}px`;
-
-  d.el.style.top =
-    `${d.item.y}px`;
-
-}
-
-
-async function stopDrag(e) {
-
-  if (!activeDrag) return;
-
-  const el =
-    activeDrag.el;
-
-  el.removeEventListener(
-    "pointermove",
-    dragMove
-  );
-
-  await saveItem(
-    activeDrag.item
-  );
-
-  activeDrag =
-    null;
-
-}
-
-
-/* =====================================================
-   RESIZE
-===================================================== */
-
-function startResize(
-  e,
-  item,
-  el
-) {
-
-  if (!isAdmin) return;
-
-  e.preventDefault();
-
-
-  activeResize = {
-
-    item,
-
-    el,
-
-    startPointerX:
-      e.clientX,
-
-    startPointerY:
-      e.clientY,
-
-    startWidth:
-      item.width,
-
-    startHeight:
-      item.height
-
-  };
-
-
-  el.setPointerCapture(
-    e.pointerId
-  );
-
-  el.addEventListener(
-    "pointermove",
-    resizeMove
-  );
-
-  el.addEventListener(
-    "pointerup",
-    stopResize,
-    {
-      once: true
-    }
-  );
-
-}
-
-
-function resizeMove(e) {
-
-  if (!activeResize) return;
-
-  const d =
-    activeResize;
-
-
-  const dx =
-    e.clientX -
-    d.startPointerX;
-
-  const dy =
-    e.clientY -
-    d.startPointerY;
-
-
-  d.item.width =
-    Math.max(
-      80,
-      d.startWidth + dx
-    );
-
-  d.item.height =
-    Math.max(
-      60,
-      d.startHeight + dy
-    );
-
-
-  d.el.style.width =
-    `${d.item.width}px`;
-
-  d.el.style.height =
-    `${d.item.height}px`;
-
-}
-
-
-async function stopResize(e) {
-
-  if (!activeResize) return;
-
-  const el =
-    activeResize.el;
-
-  el.removeEventListener(
-    "pointermove",
-    resizeMove
-  );
-
-  await saveItem(
-    activeResize.item
-  );
-
-  activeResize =
-    null;
-
-}
-
-
-/* =====================================================
-   ROTATE
-===================================================== */
-
-function startRotate(
-  e,
-  item,
-  el
-) {
-
-  if (!isAdmin) return;
-
-  e.preventDefault();
-
-
-  const rect =
-    el.getBoundingClientRect();
-
-
-  const centerX =
-    rect.left +
-    rect.width / 2;
-
-  const centerY =
-    rect.top +
-    rect.height / 2;
-
-
-  activeRotate = {
-
-    item,
-
-    el,
-
-    centerX,
-
-    centerY,
-
-    startRotation:
-      item.rotation
-
-  };
-
-
-  el.setPointerCapture(
-    e.pointerId
-  );
-
-  el.addEventListener(
-    "pointermove",
-    rotateMove
-  );
-
-  el.addEventListener(
-    "pointerup",
-    stopRotate,
-    {
-      once: true
-    }
-  );
-
-}
-
-
-function rotateMove(e) {
-
-  if (!activeRotate) return;
-
-  const d =
-    activeRotate;
-
-
-  const angle =
-    Math.atan2(
-      e.clientY - d.centerY,
-      e.clientX - d.centerX
-    ) *
-    180 /
-    Math.PI;
-
-
-  const rotation =
-    Math.round(
-      angle / 2
-    ) * 2;
-
-
-  d.item.rotation =
-    rotation;
-
-
-  d.el.style.transform =
-    `rotate(${rotation}deg)`;
-
-}
-
-
-async function stopRotate(e) {
-
-  if (!activeRotate) return;
-
-  const el =
-    activeRotate.el;
-
-  el.removeEventListener(
-    "pointermove",
-    rotateMove
-  );
-
-  await saveItem(
-    activeRotate.item
-  );
-
-  activeRotate =
-    null;
-
-}
-
-
-/* =====================================================
-   CATEGORY
-===================================================== */
-
-document
-  .querySelectorAll(
-    ".category-button"
-  )
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        document
-          .querySelectorAll(
-            ".category-button"
-          )
-          .forEach(
-            x =>
-              x.classList.remove(
-                "active"
-              )
+          startRotate(
+            event,
+            item,
+            el
           );
+        }
+      );
 
-        button.classList.add(
-          "active"
+
+      deleteButton.addEventListener(
+        "click",
+        async event => {
+
+          event.stopPropagation();
+
+          await deleteItem(item.id);
+        }
+      );
+
+
+      return el;
+    }
+
+
+    /* ============================================================
+       SELECT
+    ============================================================ */
+
+    function selectItem(id) {
+
+      selectedItemId = id;
+
+      render();
+    }
+
+
+    /* ============================================================
+       DRAG
+    ============================================================ */
+
+    function startDrag(
+      event,
+      item,
+      element
+    ) {
+
+      event.preventDefault();
+
+      element.setPointerCapture(
+        event.pointerId
+      );
+
+      dragState = {
+
+        id: item.id,
+
+        pointerId:
+          event.pointerId,
+
+        startX:
+          event.clientX,
+
+        startY:
+          event.clientY,
+
+        originalX:
+          item.x,
+
+        originalY:
+          item.y,
+
+        element
+      };
+
+      element.addEventListener(
+        "pointermove",
+        handleDrag
+      );
+
+      element.addEventListener(
+        "pointerup",
+        stopDrag,
+        {
+          once: true
+        }
+      );
+    }
+
+
+    function handleDrag(event) {
+
+      if (!dragState) {
+        return;
+      }
+
+      const item =
+        items.find(
+          i =>
+            i.id === dragState.id
         );
 
+      if (!item) {
+        return;
+      }
 
-        currentCategory =
-          button.dataset.category;
+      const dx =
+        event.clientX -
+        dragState.startX;
+
+      const dy =
+        event.clientY -
+        dragState.startY;
+
+      item.x =
+        dragState.originalX + dx;
+
+      item.y =
+        dragState.originalY + dy;
+
+      dragState.element.style.left =
+        `${item.x}px`;
+
+      dragState.element.style.top =
+        `${item.y}px`;
+    }
 
 
-        renderCanvas();
+    function stopDrag(event) {
 
+      if (!dragState) {
+        return;
+      }
+
+      const element =
+        dragState.element;
+
+      element.removeEventListener(
+        "pointermove",
+        handleDrag
+      );
+
+      dragState = null;
+    }
+
+
+    /* ============================================================
+       RESIZE
+    ============================================================ */
+
+    function startResize(
+      event,
+      item
+    ) {
+
+      event.preventDefault();
+
+      resizeState = {
+
+        id: item.id,
+
+        startX:
+          event.clientX,
+
+        startY:
+          event.clientY,
+
+        originalWidth:
+          item.width,
+
+        originalHeight:
+          item.height
+      };
+
+      window.addEventListener(
+        "pointermove",
+        handleResize
+      );
+
+      window.addEventListener(
+        "pointerup",
+        stopResize,
+        {
+          once: true
+        }
+      );
+    }
+
+
+    function handleResize(event) {
+
+      if (!resizeState) {
+        return;
+      }
+
+      const item =
+        items.find(
+          i =>
+            i.id === resizeState.id
+        );
+
+      if (!item) {
+        return;
+      }
+
+      const dx =
+        event.clientX -
+        resizeState.startX;
+
+      const dy =
+        event.clientY -
+        resizeState.startY;
+
+      item.width =
+        Math.max(
+          50,
+          resizeState.originalWidth + dx
+        );
+
+      item.height =
+        Math.max(
+          40,
+          resizeState.originalHeight + dy
+        );
+
+      render();
+    }
+
+
+    function stopResize() {
+
+      window.removeEventListener(
+        "pointermove",
+        handleResize
+      );
+
+      resizeState = null;
+    }
+
+
+    /* ============================================================
+       ROTATE
+    ============================================================ */
+
+    function startRotate(
+      event,
+      item,
+      element
+    ) {
+
+      event.preventDefault();
+
+      const rect =
+        element.getBoundingClientRect();
+
+      const centerX =
+        rect.left +
+        rect.width / 2;
+
+      const centerY =
+        rect.top +
+        rect.height / 2;
+
+      const startAngle =
+        Math.atan2(
+          event.clientY - centerY,
+          event.clientX - centerX
+        ) *
+        180 /
+        Math.PI;
+
+      rotateState = {
+
+        id: item.id,
+
+        centerX,
+        centerY,
+
+        startAngle,
+
+        originalRotation:
+          item.rotation || 0
+      };
+
+      window.addEventListener(
+        "pointermove",
+        handleRotate
+      );
+
+      window.addEventListener(
+        "pointerup",
+        stopRotate,
+        {
+          once: true
+        }
+      );
+    }
+
+
+    function handleRotate(event) {
+
+      if (!rotateState) {
+        return;
+      }
+
+      const item =
+        items.find(
+          i =>
+            i.id === rotateState.id
+        );
+
+      if (!item) {
+        return;
+      }
+
+      const currentAngle =
+        Math.atan2(
+          event.clientY -
+            rotateState.centerY,
+
+          event.clientX -
+            rotateState.centerX
+        ) *
+        180 /
+        Math.PI;
+
+      const difference =
+        currentAngle -
+        rotateState.startAngle;
+
+      item.rotation =
+        rotateState.originalRotation +
+        difference;
+
+      render();
+    }
+
+
+    function stopRotate() {
+
+      window.removeEventListener(
+        "pointermove",
+        handleRotate
+      );
+
+      rotateState = null;
+    }
+
+
+    /* ============================================================
+       ADD ITEM
+    ============================================================ */
+
+    function openAddModal(type) {
+
+      addingType = type;
+
+      itemTitle.value = "";
+
+      itemContent.value = "";
+
+      itemCategory.value =
+        categoryForType(type);
+
+      if (type === "text") {
+
+        addModalTitle.textContent =
+          "add text";
+
+        itemContent.placeholder =
+          "write something...";
+      }
+
+      else if (type === "note") {
+
+        addModalTitle.textContent =
+          "add note";
+
+        itemContent.placeholder =
+          "write a note...";
+      }
+
+      else if (type === "image") {
+
+        addModalTitle.textContent =
+          "add image";
+
+        itemContent.placeholder =
+          "paste image URL...";
+      }
+
+      else if (type === "video") {
+
+        addModalTitle.textContent =
+          "add video";
+
+        itemContent.placeholder =
+          "paste YouTube URL...";
+      }
+
+      addModal.classList.add("show");
+
+      setTimeout(() => {
+        itemContent.focus();
+      }, 100);
+    }
+
+
+    function closeAddModal() {
+
+      addModal.classList.remove("show");
+
+      addingType = null;
+    }
+
+
+    async function createNewItem() {
+
+      if (!addingType) {
+        return;
+      }
+
+      const content =
+        itemContent.value.trim();
+
+      if (!content) {
+
+        alert(
+          "내용을 입력해주세요."
+        );
+
+        return;
+      }
+
+      if (
+        addingType === "image"
+      ) {
+
+        if (!content.startsWith("http")) {
+
+          alert(
+            "이미지 주소(URL)를 넣어주세요."
+          );
+
+          return;
+        }
+      }
+
+      if (
+        addingType === "video"
+      ) {
+
+        if (!youtubeId(content)) {
+
+          alert(
+            "YouTube 주소를 넣어주세요."
+          );
+
+          return;
+        }
+      }
+
+      const size =
+        defaultSize(addingType);
+
+      const newItem = {
+
+        id: makeId(),
+
+        type: addingType,
+
+        content,
+
+        title:
+          itemTitle.value.trim(),
+
+        category:
+          itemCategory.value,
+
+        x:
+          Math.max(
+            30,
+            Math.round(
+              Math.random() *
+              Math.max(
+                100,
+                window.innerWidth - size.width - 50
+              )
+            )
+          ),
+
+        y:
+          Math.max(
+            30,
+            Math.round(
+              Math.random() *
+              Math.max(
+                100,
+                window.innerHeight - size.height - 120
+              )
+            )
+          ),
+
+        width:
+          size.width,
+
+        height:
+          size.height,
+
+        z_index:
+          getNextZIndex(),
+
+        rotation: 0
+      };
+
+      items.push(newItem);
+
+      selectedItemId =
+        newItem.id;
+
+      render();
+
+      closeAddModal();
+
+      setStatus("saving...");
+
+      const success =
+        await insertItem(newItem);
+
+      if (success) {
+
+        setStatus("saved");
+
+      } else {
+
+        setStatus(
+          "save failed"
+        );
+      }
+    }
+
+
+    function getNextZIndex() {
+
+      if (!items.length) {
+        return 1;
+      }
+
+      return (
+        Math.max(
+          ...items.map(
+            item =>
+              Number(
+                item.z_index || 1
+              )
+          )
+        ) + 1
+      );
+    }
+
+
+    /* ============================================================
+       DATABASE INSERT
+    ============================================================ */
+
+    async function insertItem(item) {
+
+      const { error } =
+        await supabaseClient
+          .from("canvas_items")
+          .insert({
+
+            id: item.id,
+
+            type: item.type,
+
+            content: item.content,
+
+            title: item.title,
+
+            category: item.category,
+
+            x: Math.round(item.x),
+
+            y: Math.round(item.y),
+
+            width:
+              Math.round(item.width),
+
+            height:
+              Math.round(item.height),
+
+            z_index:
+              Math.round(item.z_index),
+
+            rotation:
+              Number(item.rotation || 0)
+          });
+
+      if (error) {
+
+        console.error(error);
+
+        alert(
+          "저장하지 못했습니다.\n\n" +
+          error.message
+        );
+
+        return false;
+      }
+
+      return true;
+    }
+
+
+    /* ============================================================
+       SAVE ALL
+    ============================================================ */
+
+    async function saveAll() {
+
+      if (!adminMode) {
+        return;
+      }
+
+      setStatus("saving...");
+
+      try {
+
+        for (const item of items) {
+
+          const {
+            error
+          } =
+            await supabaseClient
+              .from("canvas_items")
+              .update({
+
+                type:
+                  item.type,
+
+                content:
+                  item.content,
+
+                title:
+                  item.title,
+
+                category:
+                  item.category,
+
+                x:
+                  Math.round(item.x),
+
+                y:
+                  Math.round(item.y),
+
+                width:
+                  Math.round(item.width),
+
+                height:
+                  Math.round(item.height),
+
+                z_index:
+                  Math.round(item.z_index),
+
+                rotation:
+                  Number(
+                    item.rotation || 0
+                  )
+              })
+              .eq(
+                "id",
+                item.id
+              );
+
+          if (error) {
+            throw error;
+          }
+        }
+
+        setStatus("saved");
+
+      } catch (error) {
+
+        console.error(error);
+
+        setStatus("save failed");
+
+        alert(
+          "저장에 실패했습니다.\n\n" +
+          error.message
+        );
+      }
+    }
+
+
+    /* ============================================================
+       DELETE
+    ============================================================ */
+
+    async function deleteItem(id) {
+
+      if (!adminMode) {
+        return;
+      }
+
+      const ok =
+        confirm(
+          "이 작품을 삭제할까요?"
+        );
+
+      if (!ok) {
+        return;
+      }
+
+      setStatus("deleting...");
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("canvas_items")
+          .delete()
+          .eq(
+            "id",
+            id
+          );
+
+      if (error) {
+
+        console.error(error);
+
+        alert(
+          "삭제하지 못했습니다.\n\n" +
+          error.message
+        );
+
+        setStatus("error");
+
+        return;
+      }
+
+      items =
+        items.filter(
+          item =>
+            item.id !== id
+        );
+
+      selectedItemId = null;
+
+      render();
+
+      setStatus("deleted");
+    }
+
+
+    /* ============================================================
+       CATEGORY
+    ============================================================ */
+
+    document
+      .querySelectorAll(".category-btn")
+      .forEach(button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            activeCategory =
+              button.dataset.category;
+
+            document
+              .querySelectorAll(
+                ".category-btn"
+              )
+              .forEach(btn => {
+                btn.classList.remove(
+                  "active"
+                );
+              });
+
+            button.classList.add(
+              "active"
+            );
+
+            selectedItemId = null;
+
+            render();
+          }
+        );
+      });
+
+
+    /* ============================================================
+       LOGIN
+    ============================================================ */
+
+    document
+      .getElementById("adminOpen")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (adminMode) {
+
+            logout();
+
+            return;
+          }
+
+          loginError.style.display =
+            "none";
+
+          passwordInput.value = "";
+
+          loginModal.classList.add(
+            "show"
+          );
+
+          setTimeout(() => {
+            passwordInput.focus();
+          }, 100);
+        }
+      );
+
+
+    document
+      .getElementById("cancelLogin")
+      .addEventListener(
+        "click",
+        () => {
+
+          loginModal.classList.remove(
+            "show"
+          );
+        }
+      );
+
+
+    document
+      .getElementById("loginButton")
+      .addEventListener(
+        "click",
+        login
+      );
+
+
+    passwordInput
+      .addEventListener(
+        "keydown",
+        event => {
+
+          if (
+            event.key === "Enter"
+          ) {
+            login();
+          }
+        }
+      );
+
+
+    function login() {
+
+      if (
+        passwordInput.value ===
+        ADMIN_PASSWORD
+      ) {
+
+        adminMode = true;
+
+        document.body.classList.add(
+          "admin-mode"
+        );
+
+        document.getElementById(
+          "adminOpen"
+        ).textContent =
+          "LOGOUT";
+
+        loginModal.classList.remove(
+          "show"
+        );
+
+        setStatus("admin");
+
+        render();
+
+      } else {
+
+        loginError.style.display =
+          "block";
+      }
+    }
+
+
+    function logout() {
+
+      adminMode = false;
+
+      selectedItemId = null;
+
+      document.body.classList.remove(
+        "admin-mode"
+      );
+
+      document.getElementById(
+        "adminOpen"
+      ).textContent =
+        "ADMIN";
+
+      setStatus("ready");
+
+      render();
+    }
+
+
+    /* ============================================================
+       ADMIN BUTTONS
+    ============================================================ */
+
+    document
+      .getElementById("addText")
+      .addEventListener(
+        "click",
+        () => openAddModal("text")
+      );
+
+
+    document
+      .getElementById("addNote")
+      .addEventListener(
+        "click",
+        () => openAddModal("note")
+      );
+
+
+    document
+      .getElementById("addImage")
+      .addEventListener(
+        "click",
+        () => openAddModal("image")
+      );
+
+
+    document
+      .getElementById("addVideo")
+      .addEventListener(
+        "click",
+        () => openAddModal("video")
+      );
+
+
+    document
+      .getElementById("saveAll")
+      .addEventListener(
+        "click",
+        saveAll
+      );
+
+
+    document
+      .getElementById("logout")
+      .addEventListener(
+        "click",
+        logout
+      );
+
+
+    document
+      .getElementById("cancelAdd")
+      .addEventListener(
+        "click",
+        closeAddModal
+      );
+
+
+    document
+      .getElementById("createItem")
+      .addEventListener(
+        "click",
+        createNewItem
+      );
+
+
+    /* ============================================================
+       BACKGROUND CLICK
+    ============================================================ */
+
+    world.addEventListener(
+      "pointerdown",
+      event => {
+
+        if (
+          event.target === world
+        ) {
+
+          selectedItemId = null;
+
+          render();
+        }
       }
     );
 
-  });
 
+    /* ============================================================
+       START
+    ============================================================ */
 
-/* =====================================================
-   LOGIN
-===================================================== */
+    loadItems();
 
-function openLoginModal() {
-
-  document
-    .getElementById(
-      "modalTitle"
-    )
-    .textContent =
-    "Administrator";
-
-
-  document
-    .getElementById(
-      "loginForm"
-    )
-    .style.display =
-    "block";
-
-
-  document
-    .getElementById(
-      "addForm"
-    )
-    .style.display =
-    "none";
-
-
-  document
-    .getElementById(
-      "modal"
-    )
-    .classList.add(
-      "show"
-    );
-
-
-  document
-    .getElementById(
-      "passwordInput"
-    )
-    .focus();
-
-}
-
-
-function loginAdmin() {
-
-  const password =
-    document
-      .getElementById(
-        "passwordInput"
-      )
-      .value;
-
-
-  /*
-    TEST ONLY.
-
-    실제 운영에서는 Supabase Auth 사용.
-  */
-
-  if (
-    password ===
-    DEV_ADMIN_PASSWORD
-  ) {
-
-    isAdmin = true;
-
-    closeModal();
-
-    document
-      .getElementById(
-        "adminPanel"
-      )
-      .classList.add(
-        "show"
-      );
-
-
-    document
-      .getElementById(
-        "adminBadge"
-      )
-      .classList.add(
-        "show"
-      );
-
-
-    document
-      .getElementById(
-        "loginButton"
-      )
-      .style.display =
-      "none";
-
-
-    renderCanvas();
-
-  } else {
-
-    alert(
-      "비밀번호가 올바르지 않습니다."
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-function logoutAdmin() {
-
-  isAdmin = false;
-
-  document
-    .getElementById(
-      "adminPanel"
-    )
-    .classList.remove(
-      "show"
-    );
-
-
-  document
-    .getElementById(
-      "adminBadge"
-    )
-    .classList.remove(
-      "show"
-    );
-
-
-  document
-    .getElementById(
-      "loginButton"
-    )
-    .style.display =
-    "block";
-
-
-  renderCanvas();
-
-}
-
-
-/* =====================================================
-   ADD MODAL
-===================================================== */
-
-function openAddModal(
-  type
-) {
-
-  if (!isAdmin) return;
-
-
-  document
-    .getElementById(
-      "modalTitle"
-    )
-    .textContent =
-    "Add Item";
-
-
-  document
-    .getElementById(
-      "loginForm"
-    )
-    .style.display =
-    "none";
-
-
-  document
-    .getElementById(
-      "addForm"
-    )
-    .style.display =
-    "block";
-
-
-  document
-    .getElementById(
-      "itemType"
-    )
-    .value =
-    type;
-
-
-  document
-    .getElementById(
-      "itemContent"
-    ).value = "";
-
-
-  document
-    .getElementById(
-      "itemTitle"
-    ).value = "";
-
-
-  document
-    .getElementById(
-      "modal"
-    )
-    .classList.add(
-      "show"
-    );
-
-}
-
-
-function closeModal() {
-
-  document
-    .getElementById(
-      "modal"
-    )
-    .classList.remove(
-      "show"
-    );
-
-}
-
-
-function closeAddModal() {
-
-  closeModal();
-
-}
-
-
-/* =====================================================
-   KEYBOARD
-===================================================== */
-
-document.addEventListener(
-  "keydown",
-  e => {
-
-    if (!isAdmin) return;
-
-
-    /*
-      ESC
-    */
-
-    if (
-      e.key === "Escape"
-    ) {
-
-      closeModal();
-
-    }
-
-
-    /*
-      DELETE
-
-      선택 시스템을 확장할 때
-      사용할 수 있는 자리.
-    */
-
-  }
-);
-
-
-/* =====================================================
-   INITIAL LOAD
-===================================================== */
-
-loadItems();
-
-</script>
+  </script>
 
 </body>
 </html>
