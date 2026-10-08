@@ -144,6 +144,7 @@
     .item {
       position: absolute;
 
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
 
@@ -1325,7 +1326,19 @@
 
       selectedItemId = id;
 
-      render();
+      // Do not re-render the whole canvas here.
+      // Re-rendering during pointerdown detaches the element that is
+      // about to receive pointer capture, which breaks dragging.
+      document.querySelectorAll(".item.selected").forEach(el => {
+        el.classList.remove("selected");
+      });
+
+      const selected =
+        document.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+
+      if (selected) {
+        selected.classList.add("selected");
+      }
     }
 
 
@@ -2047,6 +2060,55 @@
       setStatus("deleted");
     }
 
+
+    /* ============================================================
+       ADMIN BUTTONS
+    ============================================================ */
+
+    document
+      .getElementById("addText")
+      .addEventListener("click", () => {
+        if (!adminMode) return;
+        openAddModal("text");
+      });
+
+    document
+      .getElementById("addNote")
+      .addEventListener("click", () => {
+        if (!adminMode) return;
+        openAddModal("note");
+      });
+
+    document
+      .getElementById("addImage")
+      .addEventListener("click", () => {
+        if (!adminMode) return;
+        openAddModal("image");
+      });
+
+    document
+      .getElementById("addVideo")
+      .addEventListener("click", () => {
+        if (!adminMode) return;
+        openAddModal("video");
+      });
+
+    document
+      .getElementById("cancelAdd")
+      .addEventListener("click", () => {
+        closeAddModal();
+      });
+
+    document
+      .getElementById("createItem")
+      .addEventListener("click", createNewItem);
+
+    document
+      .getElementById("saveAll")
+      .addEventListener("click", async () => {
+        if (!adminMode) return;
+        await saveAll();
+      });
 
     /* ============================================================
        CATEGORY
