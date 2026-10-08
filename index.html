@@ -347,6 +347,10 @@
       align-items: center;
     }
 
+    body.list-view-active #adminBar {
+      display: none;
+    }
+
     body.admin-mode #adminBar {
       display: flex;
     }
@@ -492,6 +496,191 @@
        EMPTY MESSAGE
     ------------------------- */
 
+    /* -------------------------
+       CATEGORY / ARCHIVE VIEWS
+    ------------------------- */
+
+    #canvas.list-view {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .category-grid {
+      position: relative;
+      width: 100%;
+      min-height: 100%;
+      padding: 34px 28px 120px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 34px 24px;
+      align-content: start;
+    }
+
+    .category-card {
+      position: relative;
+      min-width: 0;
+      background: white;
+    }
+
+    .category-card-media {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #fafafa;
+    }
+
+    .category-card img,
+    .category-card iframe {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border: 0;
+    }
+
+    .category-card-text {
+      padding-top: 9px;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .category-card-meta {
+      margin-top: 4px;
+      font-size: 10px;
+      color: #999;
+      letter-spacing: .04em;
+    }
+
+    .archive-grid {
+      position: relative;
+      width: 100%;
+      min-height: 100%;
+      padding: 34px 28px 120px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 44px 28px;
+      align-content: start;
+    }
+
+    .archive-card {
+      cursor: pointer;
+    }
+
+    .archive-preview {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: white;
+      border: 1px solid #e5e5e5;
+    }
+
+    .archive-preview-item {
+      position: absolute;
+      overflow: hidden;
+      transform-origin: center center;
+      pointer-events: none;
+    }
+
+    .archive-preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .archive-preview-text {
+      width: 100%;
+      height: 100%;
+      white-space: pre-wrap;
+      overflow: hidden;
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .archive-preview-note {
+      width: 100%;
+      height: 100%;
+      padding: 5px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      font-size: 8px;
+      line-height: 1.35;
+      overflow: hidden;
+    }
+
+    .archive-preview-video {
+      width: 100%;
+      height: 100%;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #777;
+    }
+
+    .archive-title {
+      padding-top: 10px;
+      font-size: 12px;
+    }
+
+    .archive-date {
+      padding-top: 4px;
+      font-size: 10px;
+      color: #999;
+    }
+
+    #archiveViewer {
+      display: none;
+      position: fixed;
+      z-index: 9000;
+      inset: 54px 0 0 0;
+      background: white;
+      overflow: hidden;
+    }
+
+    #archiveViewer.show {
+      display: block;
+    }
+
+    #archiveViewerRestore {
+      display: none;
+      position: absolute;
+      z-index: 20;
+      top: 14px;
+      left: 18px;
+      border: 0;
+      background: rgba(255,255,255,.9);
+      font-size: 12px;
+      padding: 7px 9px;
+    }
+
+    body.admin-mode #archiveViewerRestore {
+      display: block;
+    }
+
+    #archiveViewerClose {
+      position: absolute;
+      z-index: 20;
+      top: 14px;
+      right: 18px;
+      border: 0;
+      background: rgba(255,255,255,.9);
+      font-size: 12px;
+      padding: 7px 9px;
+    }
+
+    #archiveViewerWorld {
+      position: absolute;
+      inset: 0;
+    }
+
     #emptyMessage {
       position: absolute;
 
@@ -559,8 +748,8 @@
         WRITING
       </button>
 
-      <button class="category-btn" data-category="theater">
-        THEATER
+      <button class="category-btn" data-category="sound">
+        SOUND
       </button>
 
       <button class="category-btn" data-category="image">
@@ -616,7 +805,7 @@
     <div class="admin-separator"></div>
 
     <button class="admin-btn" id="saveAll">
-      SAVE
+      SAVE PAGE
     </button>
 
     <button class="admin-btn" id="logout">
@@ -627,6 +816,13 @@
       ready
     </span>
 
+  </div>
+
+
+  <div id="archiveViewer">
+    <button id="archiveViewerRestore">RESTORE TO MAIN</button>
+    <button id="archiveViewerClose">CLOSE</button>
+    <div id="archiveViewerWorld"></div>
   </div>
 
 
@@ -701,9 +897,8 @@
         id="itemCategory"
         class="modal-select"
       >
-        <option value="archive">ARCHIVE</option>
         <option value="writing">WRITING</option>
-        <option value="theater">THEATER</option>
+        <option value="sound">SOUND</option>
         <option value="image">IMAGE</option>
         <option value="video">VIDEO</option>
       </select>
@@ -899,7 +1094,7 @@
       }
 
       if (type === "note") {
-        return "archive";
+        return "sound";
       }
 
       if (type === "image") {
@@ -910,7 +1105,7 @@
         return "video";
       }
 
-      return "archive";
+      return "writing";
     }
 
 
@@ -957,54 +1152,70 @@
 
       setStatus("loading...");
 
-      const {
-        data,
-        error
-      } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("canvas_items")
         .select("*")
-        .order("z_index", {
-          ascending: true
-        });
+        .order("z_index", { ascending: true });
 
       if (error) {
-
         console.error(error);
-
         setStatus("database error");
-
-        alert(
-          "Supabase에서 작품을 불러오지 못했습니다.\n\n" +
-          error.message
-        );
-
+        alert("Supabase에서 작품을 불러오지 못했습니다.\n\n" + error.message);
         return;
       }
 
-      items = (data || []).map(item => ({
-        id: item.id,
-        type: item.type,
-        content: item.content || "",
-        title: item.title || "",
-        category:
-          item.category ||
-          categoryForType(item.type),
+      items = (data || [])
+        .filter(item => item.type !== "archive_page")
+        .map(item => ({
+          id: item.id,
+          type: item.type,
+          content: item.content || "",
+          title: item.title || "",
+          category: ["archive", "theater"].includes(item.category)
+            ? "writing"
+            : (item.category || categoryForType(item.type)),
+          x: Number(item.x ?? 0),
+          y: Number(item.y ?? 0),
+          width: Number(item.width ?? 200),
+          height: Number(item.height ?? 150),
+          z_index: Number(item.z_index ?? 1),
+          rotation: Number(item.rotation ?? 0)
+        }));
 
-        x: Number(item.x ?? 0),
-        y: Number(item.y ?? 0),
-
-        width: Number(item.width ?? 200),
-        height: Number(item.height ?? 150),
-
-        z_index: Number(item.z_index ?? 1),
-
-        rotation:
-          Number(item.rotation ?? 0)
-      }));
-
+      await loadArchives();
       render();
-
       setStatus("ready");
+    }
+
+
+    async function loadArchives() {
+
+      const { data, error } = await supabaseClient
+        .from("canvas_items")
+        .select("id, type, content, title, created_at")
+        .eq("type", "archive_page")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        archives = [];
+        return;
+      }
+
+      archives = (data || []).map(row => {
+        let snapshot = [];
+        try {
+          snapshot = JSON.parse(row.content || "[]");
+        } catch (e) {
+          snapshot = [];
+        }
+        return {
+          id: row.id,
+          title: row.title || "page",
+          created_at: row.created_at,
+          items: Array.isArray(snapshot) ? snapshot : []
+        };
+      });
     }
 
 
@@ -1015,34 +1226,290 @@
     function render() {
 
       world.innerHTML = "";
+      canvas.classList.remove("list-view");
+      document.body.classList.toggle("list-view-active", activeCategory !== "all");
 
-      const visibleItems =
-        items.filter(item => {
+      if (activeCategory === "archive") {
+        canvas.classList.add("list-view");
+        renderArchiveList();
+        emptyMessage.style.display = "none";
+        return;
+      }
 
-          if (
-            activeCategory === "all"
-          ) {
-            return true;
-          }
+      if (activeCategory !== "all") {
+        canvas.classList.add("list-view");
+        renderCategoryList();
+        return;
+      }
 
-          return (
-            item.category === activeCategory
-          );
-        });
+      const visibleItems = items;
 
-      emptyMessage.style.display =
-        visibleItems.length === 0
-          ? "block"
-          : "none";
+      emptyMessage.style.display = visibleItems.length === 0 ? "block" : "none";
 
       visibleItems.forEach(item => {
-
-        const el =
-          createItemElement(item);
-
-        world.appendChild(el);
-
+        world.appendChild(createItemElement(item));
       });
+    }
+
+
+    function renderCategoryList() {
+
+      const grid = document.createElement("div");
+      grid.className = "category-grid";
+
+      const visibleItems = items.filter(item => item.category === activeCategory);
+      emptyMessage.style.display = visibleItems.length === 0 ? "block" : "none";
+
+      visibleItems.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "category-card";
+
+        const media = document.createElement("div");
+        media.className = "category-card-media";
+
+        if (item.type === "image") {
+          const img = document.createElement("img");
+          img.src = item.content;
+          img.alt = item.title || "image";
+          media.appendChild(img);
+        } else if (item.type === "video") {
+          const id = youtubeId(item.content);
+          if (id) {
+            const iframe = document.createElement("iframe");
+            iframe.src = `https://www.youtube.com/embed/${id}`;
+            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+            iframe.allowFullscreen = true;
+            media.appendChild(iframe);
+          }
+        } else {
+          media.style.alignItems = "flex-start";
+          media.style.justifyContent = "flex-start";
+          const text = document.createElement("div");
+          text.className = "category-card-text";
+          text.textContent = item.content;
+          media.appendChild(text);
+        }
+
+        const title = document.createElement("div");
+        title.className = "category-card-text";
+        title.textContent = item.title || (item.type === "text" ? item.content.slice(0, 80) : item.type.toUpperCase());
+
+        const meta = document.createElement("div");
+        meta.className = "category-card-meta";
+        meta.textContent = item.type.toUpperCase();
+
+        card.appendChild(media);
+        card.appendChild(title);
+        card.appendChild(meta);
+        grid.appendChild(card);
+      });
+
+      world.appendChild(grid);
+    }
+
+
+    function renderArchiveList() {
+
+      const grid = document.createElement("div");
+      grid.className = "archive-grid";
+
+      if (!archives.length) {
+        const empty = document.createElement("div");
+        empty.textContent = "no archived pages yet";
+        empty.style.color = "#999";
+        empty.style.fontSize = "12px";
+        grid.appendChild(empty);
+        world.appendChild(grid);
+        return;
+      }
+
+      archives.forEach((page, index) => {
+        const card = document.createElement("div");
+        card.className = "archive-card";
+
+        const preview = document.createElement("div");
+        preview.className = "archive-preview";
+
+        const maxW = 1000;
+        const maxH = 625;
+        const scale = Math.min(preview.clientWidth ? preview.clientWidth / maxW : 0.3, preview.clientHeight ? preview.clientHeight / maxH : 0.3) || 0.3;
+
+        page.items.forEach(item => {
+          const el = document.createElement("div");
+          el.className = "archive-preview-item";
+          el.style.left = `${Number(item.x || 0) * scale}px`;
+          el.style.top = `${Number(item.y || 0) * scale}px`;
+          el.style.width = `${Number(item.width || 200) * scale}px`;
+          el.style.height = `${Number(item.height || 150) * scale}px`;
+          el.style.zIndex = String(item.z_index || 1);
+          el.style.transform = `rotate(${Number(item.rotation || 0)}deg)`;
+
+          if (item.type === "image") {
+            const img = document.createElement("img");
+            img.src = item.content;
+            el.appendChild(img);
+          } else if (item.type === "text") {
+            const t = document.createElement("div");
+            t.className = "archive-preview-text";
+            t.textContent = item.content;
+            el.appendChild(t);
+          } else if (item.type === "note") {
+            const t = document.createElement("div");
+            t.className = "archive-preview-note";
+            t.textContent = item.content;
+            el.appendChild(t);
+          } else if (item.type === "video") {
+            const t = document.createElement("div");
+            t.className = "archive-preview-video";
+            t.textContent = "VIDEO";
+            el.appendChild(t);
+          }
+          preview.appendChild(el);
+        });
+
+        const title = document.createElement("div");
+        title.className = "archive-title";
+        title.textContent = page.title || `PAGE ${String(index + 1).padStart(3, "0")}`;
+
+        const date = document.createElement("div");
+        date.className = "archive-date";
+        date.textContent = page.created_at ? new Date(page.created_at).toLocaleString() : "";
+
+        card.appendChild(preview);
+        card.appendChild(title);
+        card.appendChild(date);
+        card.addEventListener("click", () => openArchivePage(page));
+        grid.appendChild(card);
+      });
+
+      world.appendChild(grid);
+    }
+
+
+    let openedArchivePage = null;
+
+    function openArchivePage(page) {
+      openedArchivePage = page;
+      const viewer = document.getElementById("archiveViewer");
+      const viewerWorld = document.getElementById("archiveViewerWorld");
+      viewerWorld.innerHTML = "";
+
+      page.items.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "item";
+        el.style.left = `${Number(item.x || 0)}px`;
+        el.style.top = `${Number(item.y || 0)}px`;
+        el.style.width = `${Number(item.width || 200)}px`;
+        el.style.height = `${Number(item.height || 150)}px`;
+        el.style.zIndex = String(item.z_index || 1);
+        el.style.transform = `rotate(${Number(item.rotation || 0)}deg)`;
+
+        const inner = document.createElement("div");
+        inner.className = "item-inner";
+
+        if (item.type === "image") {
+          const img = document.createElement("img");
+          img.className = "item-image";
+          img.src = item.content;
+          img.alt = item.title || "image";
+          inner.appendChild(img);
+        } else if (item.type === "text") {
+          const t = document.createElement("div");
+          t.className = "item-text";
+          t.textContent = item.content;
+          inner.appendChild(t);
+        } else if (item.type === "note") {
+          const t = document.createElement("div");
+          t.className = "item-note";
+          t.textContent = item.content;
+          inner.appendChild(t);
+        } else if (item.type === "video") {
+          const id = youtubeId(item.content);
+          if (id) {
+            const iframe = document.createElement("iframe");
+            iframe.className = "video-frame";
+            iframe.src = `https://www.youtube.com/embed/${id}`;
+            iframe.allowFullscreen = true;
+            inner.appendChild(iframe);
+          }
+        }
+
+        el.appendChild(inner);
+        viewerWorld.appendChild(el);
+      });
+
+      viewer.classList.add("show");
+    }
+
+
+    async function restoreArchivePage() {
+      if (!adminMode || !openedArchivePage) return;
+
+      const page = openedArchivePage;
+      const hasCurrentItems = items.length > 0;
+
+      if (hasCurrentItems) {
+        const ok = confirm(
+          "현재 도화지의 작업을 지우고 이 아카이브 페이지를 메인으로 복원할까요?"
+        );
+        if (!ok) return;
+      }
+
+      setStatus("restoring page...");
+
+      if (hasCurrentItems) {
+        const ids = items.map(item => item.id);
+        const { error: deleteError } = await supabaseClient
+          .from("canvas_items")
+          .delete()
+          .in("id", ids);
+
+        if (deleteError) {
+          console.error(deleteError);
+          alert("현재 도화지를 비우지 못했습니다.\n\n" + deleteError.message);
+          setStatus("restore failed");
+          return;
+        }
+      }
+
+      const restoredItems = page.items.map((item, index) => ({
+        id: makeId(),
+        type: item.type,
+        content: item.content || "",
+        title: item.title || "",
+        category: item.category || categoryForType(item.type),
+        x: Math.round(Number(item.x || 0)),
+        y: Math.round(Number(item.y || 0)),
+        width: Math.round(Number(item.width || 200)),
+        height: Math.round(Number(item.height || 150)),
+        z_index: Math.round(Number(item.z_index || index + 1)),
+        rotation: Number(item.rotation || 0)
+      }));
+
+      if (restoredItems.length) {
+        const { error: insertError } = await supabaseClient
+          .from("canvas_items")
+          .insert(restoredItems);
+
+        if (insertError) {
+          console.error(insertError);
+          alert("아카이브를 메인으로 복원하지 못했습니다.\n\n" + insertError.message);
+          setStatus("restore failed");
+          await loadItems();
+          return;
+        }
+      }
+
+      document.getElementById("archiveViewer").classList.remove("show");
+      openedArchivePage = null;
+      activeCategory = "all";
+      selectedItemId = null;
+      document.querySelectorAll(".category-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.category === "all");
+      });
+
+      await loadItems();
+      setStatus("page restored");
     }
 
 
@@ -1926,78 +2393,79 @@
 
     async function saveAll() {
 
-      if (!adminMode) {
+      if (!adminMode) return;
+
+      if (!items.length) {
+        setStatus("nothing to save");
         return;
       }
 
-      setStatus("saving...");
+      const pageNumber = archives.length + 1;
+      const pageTitle = `PAGE ${String(pageNumber).padStart(3, "0")}`;
+      const snapshot = items.map(item => ({
+        id: item.id,
+        type: item.type,
+        content: item.content,
+        title: item.title,
+        category: item.category,
+        x: Math.round(item.x),
+        y: Math.round(item.y),
+        width: Math.round(item.width),
+        height: Math.round(item.height),
+        z_index: Math.round(item.z_index),
+        rotation: Number(item.rotation || 0)
+      }));
 
-      try {
+      setStatus("saving page...");
 
-        for (const item of items) {
+      const { error: archiveError } = await supabaseClient
+        .from("canvas_items")
+        .insert({
+          id: `archive_${makeId()}`,
+          type: "archive_page",
+          content: JSON.stringify(snapshot),
+          title: pageTitle,
+          category: "archive",
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          z_index: pageNumber,
+          rotation: 0
+        });
 
-          const {
-            error
-          } =
-            await supabaseClient
-              .from("canvas_items")
-              .update({
-
-                type:
-                  item.type,
-
-                content:
-                  item.content,
-
-                title:
-                  item.title,
-
-                category:
-                  item.category,
-
-                x:
-                  Math.round(item.x),
-
-                y:
-                  Math.round(item.y),
-
-                width:
-                  Math.round(item.width),
-
-                height:
-                  Math.round(item.height),
-
-                z_index:
-                  Math.round(item.z_index),
-
-                rotation:
-                  Number(
-                    item.rotation || 0
-                  )
-              })
-              .eq(
-                "id",
-                item.id
-              );
-
-          if (error) {
-            throw error;
-          }
-        }
-
-        setStatus("saved");
-
-      } catch (error) {
-
-        console.error(error);
-
+      if (archiveError) {
+        console.error(archiveError);
         setStatus("save failed");
-
-        alert(
-          "저장에 실패했습니다.\n\n" +
-          error.message
-        );
+        alert("아카이브 저장에 실패했습니다.\n\n" + archiveError.message);
+        return;
       }
+
+      const ids = items.map(item => item.id);
+      const { error: deleteError } = await supabaseClient
+        .from("canvas_items")
+        .delete()
+        .in("id", ids);
+
+      if (deleteError) {
+        console.error(deleteError);
+        setStatus("archive saved");
+        alert("아카이브는 저장됐지만 현재 도화지를 비우지 못했습니다.\n\n" + deleteError.message);
+        await loadItems();
+        return;
+      }
+
+      items = [];
+      selectedItemId = null;
+      activeCategory = "all";
+
+      document.querySelectorAll(".category-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.category === "all");
+      });
+
+      await loadArchives();
+      render();
+      setStatus("page saved");
     }
 
 
@@ -2125,6 +2593,8 @@
             activeCategory =
               button.dataset.category;
 
+            document.getElementById("archiveViewer").classList.remove("show");
+
             document
               .querySelectorAll(
                 ".category-btn"
@@ -2144,6 +2614,18 @@
             render();
           }
         );
+      });
+
+
+    document
+      .getElementById("archiveViewerRestore")
+      .addEventListener("click", restoreArchivePage);
+
+
+    document
+      .getElementById("archiveViewerClose")
+      .addEventListener("click", () => {
+        document.getElementById("archiveViewer").classList.remove("show");
       });
 
 
