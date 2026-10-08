@@ -84,9 +84,9 @@
 
   <script>
     // --- Config & State ---
-    // ⚠️ 아래 두 항목을 본인의 Supabase 설정값으로 변경하세요!
-    const SUPABASE_URL = "https://ocqfspslmfddxzqvdygi.supabase.co"; 
-    const SUPABASE_ANON_KEY = "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";              
+    const SUPABASE_URL = "https://ocqfspslmfddxzqvdygi.supabase.co"; // 본인의 Supabase URL로 변경
+    const SUPABASE_ANON_KEY = "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";              // 본인의 Supabase Anon Key로 변경
+    const ADMIN_PASSWORD = "0322";                           // 관리자 비밀번호
 
     let supabase = null;
     if (SUPABASE_URL !== "https://your-project.supabase.co" && window.supabase) {
@@ -115,18 +115,18 @@
     }
 
     // --- Local Storage Backup Helper ---
-    function saveToLocalBackup() {
+    function saveToLocalStorage() {
       localStorage.setItem('archive_canvas_items', JSON.stringify(items));
     }
 
-    function loadFromLocalBackup() {
+    function loadFromLocalStorage() {
       const saved = localStorage.getItem('archive_canvas_items');
       return saved ? JSON.parse(saved) : [];
     }
 
-    // --- DB Operations ---
+    // --- DB & Storage Operations ---
     const saveItemToSupabase = debounce(async (item) => {
-      saveToLocalBackup(); // 백업용 저장
+      saveToLocalStorage(); // 브라우저 로컬 저장소에 상시 백업
 
       if (!supabase) return;
       const { error } = await supabase.from('canvas_items').upsert({
@@ -139,33 +139,32 @@
         height: item.height,
         z_index: item.z_index
       });
-      if (error) console.error("Supabase 저장 에러:", error.message);
+      if (error) console.error("Supabase Save Error:", error.message);
     }, 300);
 
     async function deleteItemFromSupabase(id) {
-      saveToLocalBackup();
+      saveToLocalStorage(); // 백업 데이터 반영
 
       if (!supabase) return;
       const { error } = await supabase.from('canvas_items').delete().eq('id', id);
-      if (error) console.error("Supabase 삭제 에러:", error.message);
+      if (error) console.error("Supabase Delete Error:", error.message);
     }
 
     async function loadItems() {
-      let fetchedItems = [];
+      let loadedData = [];
 
       if (supabase) {
         const { data, error } = await supabase.from('canvas_items').select('*');
-        if (!error && data) {
-          fetchedItems = data;
+        if (!error && data && data.length > 0) {
+          loadedData = data;
         } else {
-          console.error("Supabase 불러오기 실패 (Local 백업 사용):", error?.message);
-          fetchedItems = loadFromLocalBackup();
+          loadedData = loadFromLocalStorage();
         }
       } else {
-        fetchedItems = loadFromLocalBackup();
+        loadedData = loadFromLocalStorage();
       }
 
-      items = fetchedItems;
+      items = loadedData;
       items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
       renderCanvas();
     }
@@ -184,7 +183,7 @@
         el.style.height = `${item.height}px`;
         el.style.zIndex = item.z_index || 1;
 
-        // Item Content
+        // Item Content Rendering
         let contentHtml = '';
         if (item.type === 'text') {
           contentHtml = `<p class="whitespace-pre-wrap text-sm text-slate-800 pointer-events-none">${item.content}</p>`;
@@ -195,23 +194,24 @@
         } else if (item.type === 'video') {
           const videoId = extractYouTubeId(item.content);
           if (videoId) {
-            // 방문자 모드에서는 영상 클릭이 가능하도록 pointer-events 조절
-            const pointerClass = isAdmin ? 'pointer-events-none' : 'pointer-events-auto';
-            contentHtml = `<iframe class="w-full h-full rounded-lg ${pointerClass}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+            const pointerEventsClass = isAdmin ? 'pointer-events-none' : 'pointer-events-auto';
+            contentHtml = `<iframe class="w-full h-full rounded-lg ${pointerEventsClass}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
           } else {
             contentHtml = `<p class="text-xs text-red-500">잘못된 유튜브 URL입니다.</p>`;
           }
         }
 
-        // Admin Only Elements
+        // Delete Button for Admin
         const deleteBtn = isAdmin ? `
           <button onclick="removeItem('${item.id}', event)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow z-10">×</button>
         ` : '';
 
+        // Resize handle for Admin
         const resizeHandle = isAdmin ? `<div class="resize-handle"></div>` : '';
 
         el.innerHTML = `${deleteBtn}${contentHtml}${resizeHandle}`;
 
+        // Event Handling
         setupInteractions(el, item);
         canvas.appendChild(el);
       });
@@ -223,12 +223,10 @@
       let startX, startY, startLeft, startTop, startWidth, startHeight;
 
       const handleDown = (e) => {
-        // 클릭 시 화면 맨 앞으로 가져오기
         maxZIndex++;
         item.z_index = maxZIndex;
         el.style.zIndex = maxZIndex;
 
-        // 관리자만 드래그/리사이즈 가능
         if (!isAdmin) return;
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -237,134 +235,4 @@
         if (e.target.classList.contains('resize-handle')) {
           isResizing = true;
           startWidth = item.width;
-          startHeight = item.height;
-          startX = clientX;
-          startY = clientY;
-        } else {
-          isDragging = true;
-          startLeft = item.x;
-          startTop = item.y;
-          startX = clientX;
-          startY = clientY;
-        }
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchmove', handleMove);
-        window.addEventListener('touchend', handleUp);
-      };
-
-      const handleMove = (e) => {
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        if (isDragging) {
-          item.x = startLeft + (clientX - startX);
-          item.y = startTop + (clientY - startY);
-          el.style.left = `${item.x}px`;
-          el.style.top = `${item.y}px`;
-          saveItemToSupabase(item);
-        } else if (isResizing) {
-          item.width = Math.max(120, startWidth + (clientX - startX));
-          item.height = Math.max(80, startHeight + (clientY - startY));
-          el.style.width = `${item.width}px`;
-          el.style.height = `${item.height}px`;
-          saveItemToSupabase(item);
-        }
-      };
-
-      const handleUp = () => {
-        if (isDragging || isResizing) {
-          saveItemToSupabase(item);
-        }
-        isDragging = false;
-        isResizing = false;
-        window.removeEventListener('mousemove', handleMove);
-        window.removeEventListener('mouseup', handleUp);
-        window.removeEventListener('touchmove', handleMove);
-        window.removeEventListener('touchend', handleUp);
-      };
-
-      el.addEventListener('mousedown', handleDown);
-      el.addEventListener('touchstart', handleDown, { passive: true });
-    }
-
-    // --- Admin Toggle & Modals ---
-    function toggleAdminMode() {
-      if (!isAdmin) {
-        const pwd = prompt("관리자 비밀번호를 입력하세요:");
-        if (pwd === "0322") {
-          isAdmin = true;
-          document.getElementById('adminBadge').classList.remove('hidden');
-          document.getElementById('adminControls').classList.remove('hidden');
-          document.getElementById('adminToggleBtn').innerText = "관리자 로그아웃";
-        } else if (pwd !== null) {
-          alert("비밀번호가 올바르지 않습니다.");
-        }
-      } else {
-        isAdmin = false;
-        document.getElementById('adminBadge').classList.add('hidden');
-        document.getElementById('adminControls').classList.add('hidden');
-        document.getElementById('adminToggleBtn').innerText = "관리자 로그인";
-      }
-      renderCanvas();
-    }
-
-    function openAddModal(type) {
-      document.getElementById('modalItemType').value = type;
-      const contentInput = document.getElementById('modalInputContent');
-      contentInput.value = '';
-
-      const labels = {
-        text: '텍스트 내용',
-        note: '메모 내용',
-        image: '이미지 URL',
-        video: '유튜브 링크 URL'
-      };
-      document.getElementById('modalInputLabel').innerText = labels[type] || '내용';
-      document.getElementById('addModal').classList.remove('hidden');
-      document.getElementById('addModal').classList.add('flex');
-    }
-
-    function closeAddModal() {
-      document.getElementById('addModal').classList.add('hidden');
-      document.getElementById('addModal').classList.remove('flex');
-    }
-
-    function submitNewItem() {
-      const type = document.getElementById('modalItemType').value;
-      const content = document.getElementById('modalInputContent').value.trim();
-
-      if (!content) return alert("내용을 입력해주세요.");
-
-      maxZIndex++;
-      const newItem = {
-        id: 'item_' + Date.now(),
-        type,
-        content,
-        x: 100 + (items.length * 20) % 300,
-        y: 100 + (items.length * 20) % 300,
-        width: type === 'video' ? 320 : 200,
-        height: type === 'video' ? 180 : 150,
-        z_index: maxZIndex
-      };
-
-      items.push(newItem);
-      saveItemToSupabase(newItem);
-      renderCanvas();
-      closeAddModal();
-    }
-
-    function removeItem(id, e) {
-      e.stopPropagation();
-      if (!confirm("이 항목을 삭제하시겠습니까?")) return;
-      items = items.filter(i => i.id !== id);
-      deleteItemFromSupabase(id);
-      renderCanvas();
-    }
-
-    // App Initialization
-    window.addEventListener('DOMContentLoaded', loadItems);
-  </script>
-</body>
-</html>
+          startHeight = item
