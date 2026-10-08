@@ -2,237 +2,2412 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Archive Canvas</title>
-  <!-- Tailwind CSS CDN -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+
+  <title>Siné Kang — Archive</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS Client CDN -->
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #fff;
+      color: #111;
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    }
+
     body {
       user-select: none;
-      background-color: #f8fafc;
-      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-      background-size: 24px 24px;
     }
+
+    /* --------------------------------
+       HEADER
+    -------------------------------- */
+
+    #topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      z-index: 1000;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 24px;
+
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    #siteTitle {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    #categoryBar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .category-button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 4px 0;
+
+      color: #777;
+
+      font-size: 11px;
+      letter-spacing: 0.08em;
+
+      cursor: pointer;
+
+      transition:
+        color 0.2s ease,
+        opacity 0.2s ease;
+    }
+
+    .category-button:hover,
+    .category-button.active {
+      color: #000;
+    }
+
+    /* --------------------------------
+       CANVAS
+    -------------------------------- */
+
+    #viewport {
+      position: fixed;
+      inset: 58px 0 0 0;
+
+      overflow: hidden;
+
+      background: #fff;
+
+      cursor: default;
+    }
+
+    #world {
+      position: absolute;
+
+      width: 5000px;
+      height: 5000px;
+
+      left: 50%;
+      top: 50%;
+
+      transform-origin: 0 0;
+    }
+
+    /* --------------------------------
+       CANVAS ITEM
+    -------------------------------- */
+
     .canvas-item {
       position: absolute;
-      touch-action: none;
-      transition: box-shadow 0.15s ease;
+
+      transform-origin: center center;
+
+      cursor: default;
+
+      transition:
+        box-shadow 0.15s ease,
+        filter 0.15s ease;
     }
+
+    .canvas-item.admin {
+      cursor: grab;
+    }
+
+    .canvas-item.admin:active {
+      cursor: grabbing;
+    }
+
     .canvas-item:hover {
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      filter: none;
     }
+
+    .canvas-item.admin:hover {
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .item-inner {
+      width: 100%;
+      height: 100%;
+
+      overflow: hidden;
+
+      position: relative;
+    }
+
+    /* --------------------------------
+       TEXT
+    -------------------------------- */
+
+    .text-item {
+      padding: 12px;
+
+      white-space: pre-wrap;
+
+      font-size: 15px;
+      line-height: 1.55;
+
+      color: #111;
+
+      overflow: hidden;
+    }
+
+    /* --------------------------------
+       NOTE
+    -------------------------------- */
+
+    .note-item {
+      padding: 15px;
+
+      background: #fff69c;
+
+      font-size: 14px;
+      line-height: 1.5;
+
+      color: #262000;
+
+      overflow: hidden;
+    }
+
+    /* --------------------------------
+       IMAGE
+    -------------------------------- */
+
+    .image-item {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+
+      display: block;
+    }
+
+    /* --------------------------------
+       VIDEO
+    -------------------------------- */
+
+    .video-item {
+      width: 100%;
+      height: 100%;
+
+      border: 0;
+
+      display: block;
+    }
+
+    /* --------------------------------
+       ADMIN CONTROLS
+    -------------------------------- */
+
+    .delete-button {
+      position: absolute;
+
+      top: -11px;
+      right: -11px;
+
+      width: 22px;
+      height: 22px;
+
+      border: 0;
+      border-radius: 50%;
+
+      background: #000;
+      color: #fff;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 14px;
+
+      cursor: pointer;
+
+      z-index: 100;
+    }
+
     .resize-handle {
       position: absolute;
-      width: 12px;
-      height: 12px;
-      right: 2px;
-      bottom: 2px;
-      cursor: se-resize;
-      background-color: #cbd5e1;
-      border-radius: 2px;
+
+      right: -6px;
+      bottom: -6px;
+
+      width: 14px;
+      height: 14px;
+
+      background: #000;
+
+      cursor: nwse-resize;
+
+      z-index: 100;
     }
-    .note-bg {
-      background-color: #fef08a;
+
+    .rotate-handle {
+      position: absolute;
+
+      left: 50%;
+      top: -27px;
+
+      transform: translateX(-50%);
+
+      width: 14px;
+      height: 14px;
+
+      border-radius: 50%;
+
+      background: #000;
+
+      cursor: grab;
+
+      z-index: 100;
+    }
+
+    .rotate-line {
+      position: absolute;
+
+      left: 50%;
+      top: -20px;
+
+      width: 1px;
+      height: 20px;
+
+      background: #000;
+
+      z-index: 99;
+    }
+
+    /* --------------------------------
+       ADMIN PANEL
+    -------------------------------- */
+
+    #adminPanel {
+      position: fixed;
+
+      left: 50%;
+      bottom: 18px;
+
+      transform: translateX(-50%);
+
+      z-index: 2000;
+
+      display: none;
+
+      align-items: center;
+      gap: 5px;
+
+      padding: 7px;
+
+      border-radius: 12px;
+
+      background: rgba(20, 20, 20, 0.95);
+
+      box-shadow:
+        0 15px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    #adminPanel.show {
+      display: flex;
+    }
+
+    .admin-tool {
+      border: 0;
+
+      padding: 7px 10px;
+
+      border-radius: 7px;
+
+      background: transparent;
+      color: #fff;
+
+      font-size: 11px;
+
+      cursor: pointer;
+    }
+
+    .admin-tool:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .admin-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* --------------------------------
+       ADMIN LOGIN
+    -------------------------------- */
+
+    #loginButton {
+      position: fixed;
+
+      right: 20px;
+      bottom: 20px;
+
+      z-index: 2100;
+
+      border: 0;
+
+      background: transparent;
+
+      color: rgba(0, 0, 0, 0.25);
+
+      font-size: 10px;
+
+      cursor: pointer;
+    }
+
+    #loginButton:hover {
+      color: #000;
+    }
+
+    /* --------------------------------
+       MODAL
+    -------------------------------- */
+
+    #modal {
+      position: fixed;
+      inset: 0;
+
+      z-index: 3000;
+
+      display: none;
+
+      align-items: center;
+      justify-content: center;
+
+      background: rgba(0, 0, 0, 0.25);
+
+      backdrop-filter: blur(5px);
+    }
+
+    #modal.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(430px, calc(100vw - 32px));
+
+      padding: 24px;
+
+      background: #fff;
+
+      border-radius: 14px;
+
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.18);
+    }
+
+    .modal-title {
+      margin-bottom: 20px;
+
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .modal-label {
+      display: block;
+
+      margin-bottom: 6px;
+
+      font-size: 11px;
+
+      color: #666;
+    }
+
+    .modal-input,
+    .modal-select,
+    .modal-textarea {
+      width: 100%;
+
+      border: 1px solid #ddd;
+
+      border-radius: 7px;
+
+      padding: 9px 10px;
+
+      font-size: 13px;
+
+      outline: none;
+    }
+
+    .modal-input:focus,
+    .modal-select:focus,
+    .modal-textarea:focus {
+      border-color: #111;
+    }
+
+    .modal-textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .modal-row {
+      margin-bottom: 15px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 7px;
+
+      margin-top: 20px;
+    }
+
+    .modal-button {
+      border: 0;
+
+      padding: 9px 14px;
+
+      border-radius: 7px;
+
+      font-size: 12px;
+
+      cursor: pointer;
+    }
+
+    .modal-cancel {
+      background: #eee;
+      color: #333;
+    }
+
+    .modal-submit {
+      background: #111;
+      color: #fff;
+    }
+
+    /* --------------------------------
+       ADMIN BADGE
+    -------------------------------- */
+
+    #adminBadge {
+      position: fixed;
+
+      top: 68px;
+      right: 20px;
+
+      z-index: 1500;
+
+      display: none;
+
+      padding: 5px 8px;
+
+      background: #111;
+      color: #fff;
+
+      border-radius: 5px;
+
+      font-size: 9px;
+
+      letter-spacing: 0.08em;
+    }
+
+    #adminBadge.show {
+      display: block;
+    }
+
+    /* --------------------------------
+       MOBILE
+    -------------------------------- */
+
+    @media (max-width: 700px) {
+      #topbar {
+        height: 50px;
+        padding: 0 14px;
+      }
+
+      #viewport {
+        inset: 50px 0 0 0;
+      }
+
+      #categoryBar {
+        gap: 10px;
+        overflow-x: auto;
+        max-width: 65vw;
+      }
+
+      .category-button {
+        font-size: 9px;
+      }
+
+      #siteTitle {
+        font-size: 11px;
+      }
+
+      #adminPanel {
+        max-width: calc(100vw - 20px);
+        overflow-x: auto;
+      }
     }
   </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col font-sans text-slate-800">
 
-  <!-- Header / Toolbar -->
-  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between z-50">
-    <div class="flex items-center space-x-3">
-      <h1 class="text-xl font-bold tracking-tight text-slate-900">Archive Canvas</h1>
-      <span id="adminBadge" class="hidden text-xs bg-red-100 text-red-700 font-semibold px-2.5 py-0.5 rounded-full">Admin Mode</span>
+<body>
+
+  <!-- =========================================
+       HEADER
+  ========================================== -->
+
+  <header id="topbar">
+
+    <div id="siteTitle">
+      SINÉ KANG
     </div>
 
-    <!-- Controls -->
-    <div class="flex items-center space-x-2">
-      <div id="adminControls" class="hidden flex items-center space-x-2">
-        <button onclick="openAddModal('text')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 텍스트</button>
-        <button onclick="openAddModal('note')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 메모</button>
-        <button onclick="openAddModal('image')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 이미지</button>
-        <button onclick="openAddModal('video')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition">+ 유튜브</button>
-      </div>
-      <button onclick="toggleAdminMode()" id="adminToggleBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">관리자 로그인</button>
-    </div>
+    <nav id="categoryBar">
+      <button class="category-button active" data-category="all">
+        ALL
+      </button>
+
+      <button class="category-button" data-category="writing">
+        WRITING
+      </button>
+
+      <button class="category-button" data-category="theater">
+        THEATER
+      </button>
+
+      <button class="category-button" data-category="image">
+        IMAGE
+      </button>
+
+      <button class="category-button" data-category="video">
+        VIDEO
+      </button>
+
+      <button class="category-button" data-category="archive">
+        ARCHIVE
+      </button>
+    </nav>
+
   </header>
 
-  <!-- Main Canvas -->
-  <main id="canvas" class="flex-1 relative overflow-hidden">
-    <!-- Canvas items will render dynamically -->
+
+  <!-- =========================================
+       CANVAS VIEWPORT
+  ========================================== -->
+
+  <main id="viewport">
+
+    <div id="world"></div>
+
   </main>
 
-  <!-- Add Item Modal -->
-  <div id="addModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 m-4">
-      <h2 id="modalTitle" class="text-lg font-bold mb-4">항목 추가</h2>
-      <input type="hidden" id="modalItemType" />
-      
-      <div class="mb-4">
-        <label id="modalInputLabel" class="block text-sm font-medium text-slate-700 mb-1">내용</label>
-        <textarea id="modalInputContent" rows="4" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none" placeholder="내용을 입력하세요..."></textarea>
-      </div>
 
-      <div class="flex justify-end space-x-2">
-        <button onclick="closeAddModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
-        <button onclick="submitNewItem()" class="px-4 py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800">추가</button>
-      </div>
-    </div>
+  <!-- =========================================
+       ADMIN BADGE
+  ========================================== -->
+
+  <div id="adminBadge">
+    ADMIN MODE
   </div>
 
-  <script>
-    // --- Config & State ---
-    const SUPABASE_URL = "https://ocqfspslmfddxzqvdygi.supabase.co"; // 본인의 Supabase URL로 변경
-    const SUPABASE_ANON_KEY = "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";              // 본인의 Supabase Anon Key로 변경
-    const ADMIN_PASSWORD = "0322";                           // 관리자 비밀번호
 
-    let supabase = null;
-    if (SUPABASE_URL !== "https://your-project.supabase.co" && window.supabase) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <!-- =========================================
+       ADMIN PANEL
+  ========================================== -->
+
+  <div id="adminPanel">
+
+    <button
+      class="admin-tool"
+      onclick="openAddModal('text')"
+    >
+      + TEXT
+    </button>
+
+    <button
+      class="admin-tool"
+      onclick="openAddModal('note')"
+    >
+      + NOTE
+    </button>
+
+    <button
+      class="admin-tool"
+      onclick="openAddModal('image')"
+    >
+      + IMAGE
+    </button>
+
+    <button
+      class="admin-tool"
+      onclick="openAddModal('video')"
+    >
+      + VIDEO
+    </button>
+
+    <div class="admin-divider"></div>
+
+    <button
+      class="admin-tool"
+      onclick="saveAllItems()"
+    >
+      SAVE
+    </button>
+
+    <button
+      class="admin-tool"
+      onclick="logoutAdmin()"
+    >
+      LOGOUT
+    </button>
+
+  </div>
+
+
+  <!-- =========================================
+       LOGIN BUTTON
+  ========================================== -->
+
+  <button id="loginButton" onclick="openLoginModal()">
+    admin
+  </button>
+
+
+  <!-- =========================================
+       MODAL
+  ========================================== -->
+
+  <div id="modal">
+
+    <div class="modal-box">
+
+      <div id="modalTitle" class="modal-title">
+        Add Item
+      </div>
+
+
+      <!-- LOGIN -->
+
+      <div id="loginForm">
+
+        <div class="modal-row">
+
+          <label class="modal-label">
+            Password
+          </label>
+
+          <input
+            id="passwordInput"
+            class="modal-input"
+            type="password"
+            autocomplete="current-password"
+          />
+
+        </div>
+
+        <div class="modal-buttons">
+
+          <button
+            class="modal-button modal-cancel"
+            onclick="closeModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="modal-button modal-submit"
+            onclick="loginAdmin()"
+          >
+            Login
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- ADD ITEM -->
+
+      <div id="addForm" style="display:none;">
+
+        <div class="modal-row">
+
+          <label class="modal-label">
+            Type
+          </label>
+
+          <select
+            id="itemType"
+            class="modal-select"
+          >
+            <option value="text">Text</option>
+            <option value="note">Note</option>
+            <option value="image">Image</option>
+            <option value="video">YouTube</option>
+          </select>
+
+        </div>
+
+
+        <div class="modal-row">
+
+          <label class="modal-label">
+            Category
+          </label>
+
+          <select
+            id="itemCategory"
+            class="modal-select"
+          >
+            <option value="writing">Writing</option>
+            <option value="theater">Theater</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="archive">Archive</option>
+          </select>
+
+        </div>
+
+
+        <div class="modal-row">
+
+          <label class="modal-label">
+            Content
+          </label>
+
+          <textarea
+            id="itemContent"
+            class="modal-textarea"
+            placeholder="텍스트 또는 URL"
+          ></textarea>
+
+        </div>
+
+
+        <div class="modal-row">
+
+          <label class="modal-label">
+            Title
+          </label>
+
+          <input
+            id="itemTitle"
+            class="modal-input"
+            type="text"
+            placeholder="Optional"
+          />
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+          <button
+            class="modal-button modal-cancel"
+            onclick="closeModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="modal-button modal-submit"
+            onclick="createItem()"
+          >
+            Add
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+<script>
+
+/* =====================================================
+   CONFIG
+===================================================== */
+
+const SUPABASE_URL =
+  "https://ocqfspslmfddxzqvdygi.supabase.co";
+
+const SUPABASE_ANON_KEY =
+  "sb_publishable_ntO5tHSW-9G-yil3kLi3oQ_r8hwxyhI";
+
+
+/*
+  IMPORTANT
+
+  실제 서비스에서는 비밀번호를 여기에 넣지 말 것.
+
+  아래 LOGIN은 현재 테스트용이다.
+  실제 운영에서는 Supabase Auth로 교체해야 한다.
+*/
+
+const DEV_ADMIN_PASSWORD = "0322";
+
+
+/* =====================================================
+   SUPABASE
+===================================================== */
+
+const supabaseClient =
+  window.supabase &&
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
+let items = [];
+
+let isAdmin = false;
+
+let currentCategory = "all";
+
+let maxZIndex = 1;
+
+let activeDrag = null;
+
+let activeResize = null;
+
+let activeRotate = null;
+
+
+/* =====================================================
+   LOCAL STORAGE
+===================================================== */
+
+const LOCAL_KEY =
+  "sine_kang_archive_items";
+
+
+function saveLocal() {
+
+  localStorage.setItem(
+    LOCAL_KEY,
+    JSON.stringify(items)
+  );
+
+}
+
+
+function loadLocal() {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(LOCAL_KEY)
+    ) || [];
+
+  } catch {
+
+    return [];
+
+  }
+
+}
+
+
+/* =====================================================
+   ID
+===================================================== */
+
+function createId() {
+
+  return (
+    Date.now().toString(36) +
+    Math.random().toString(36).slice(2, 8)
+  );
+
+}
+
+
+/* =====================================================
+   YOUTUBE
+===================================================== */
+
+function extractYouTubeId(url) {
+
+  if (!url) return null;
+
+  try {
+
+    const parsed =
+      new URL(url);
+
+    if (
+      parsed.hostname.includes("youtu.be")
+    ) {
+
+      return parsed.pathname
+        .replace("/", "")
+        .slice(0, 11);
+
     }
 
-    let isAdmin = false;
-    let items = [];
-    let maxZIndex = 1;
+    if (
+      parsed.hostname.includes("youtube.com")
+    ) {
 
-    // --- Debounce Utility ---
-    function debounce(func, wait = 300) {
-      let timeout;
-      return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-      };
-    }
+      if (
+        parsed.pathname === "/watch"
+      ) {
 
-    // --- YouTube URL Parser ---
-    function extractYouTubeId(url) {
-      if (!url) return null;
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : null;
-    }
+        return parsed.searchParams.get("v");
 
-    // --- Local Storage Backup Helper ---
-    function saveToLocalStorage() {
-      localStorage.setItem('archive_canvas_items', JSON.stringify(items));
-    }
-
-    function loadFromLocalStorage() {
-      const saved = localStorage.getItem('archive_canvas_items');
-      return saved ? JSON.parse(saved) : [];
-    }
-
-    // --- DB & Storage Operations ---
-    const saveItemToSupabase = debounce(async (item) => {
-      saveToLocalStorage(); // 브라우저 로컬 저장소에 상시 백업
-
-      if (!supabase) return;
-      const { error } = await supabase.from('canvas_items').upsert({
-        id: item.id,
-        type: item.type,
-        content: item.content,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
-        z_index: item.z_index
-      });
-      if (error) console.error("Supabase Save Error:", error.message);
-    }, 300);
-
-    async function deleteItemFromSupabase(id) {
-      saveToLocalStorage(); // 백업 데이터 반영
-
-      if (!supabase) return;
-      const { error } = await supabase.from('canvas_items').delete().eq('id', id);
-      if (error) console.error("Supabase Delete Error:", error.message);
-    }
-
-    async function loadItems() {
-      let loadedData = [];
-
-      if (supabase) {
-        const { data, error } = await supabase.from('canvas_items').select('*');
-        if (!error && data && data.length > 0) {
-          loadedData = data;
-        } else {
-          loadedData = loadFromLocalStorage();
-        }
-      } else {
-        loadedData = loadFromLocalStorage();
       }
 
-      items = loadedData;
-      items.forEach(i => { if (i.z_index > maxZIndex) maxZIndex = i.z_index; });
-      renderCanvas();
+      if (
+        parsed.pathname.startsWith("/shorts/")
+      ) {
+
+        return parsed.pathname
+          .split("/")[2]
+          ?.slice(0, 11);
+
+      }
+
+      if (
+        parsed.pathname.startsWith("/embed/")
+      ) {
+
+        return parsed.pathname
+          .split("/")[2]
+          ?.slice(0, 11);
+
+      }
+
     }
 
-    // --- UI Render & Interactions ---
-    function renderCanvas() {
-      const canvas = document.getElementById('canvas');
-      canvas.innerHTML = '';
+  } catch {
 
-      items.forEach(item => {
-        const el = document.createElement('div');
-        el.className = `canvas-item rounded-xl p-3 shadow-sm border border-slate-200/80 bg-white ${item.type === 'note' ? 'note-bg border-amber-300' : ''}`;
-        el.style.left = `${item.x}px`;
-        el.style.top = `${item.y}px`;
-        el.style.width = `${item.width}px`;
-        el.style.height = `${item.height}px`;
-        el.style.zIndex = item.z_index || 1;
+    return null;
 
-        // Item Content Rendering
-        let contentHtml = '';
-        if (item.type === 'text') {
-          contentHtml = `<p class="whitespace-pre-wrap text-sm text-slate-800 pointer-events-none">${item.content}</p>`;
-        } else if (item.type === 'note') {
-          contentHtml = `<p class="whitespace-pre-wrap text-sm text-amber-950 font-medium pointer-events-none">${item.content}</p>`;
-        } else if (item.type === 'image') {
-          contentHtml = `<img src="${item.content}" class="w-full h-full object-cover rounded-lg pointer-events-none" alt="canvas img" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Image+Error';" />`;
-        } else if (item.type === 'video') {
-          const videoId = extractYouTubeId(item.content);
-          if (videoId) {
-            const pointerEventsClass = isAdmin ? 'pointer-events-none' : 'pointer-events-auto';
-            contentHtml = `<iframe class="w-full h-full rounded-lg ${pointerEventsClass}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
-          } else {
-            contentHtml = `<p class="text-xs text-red-500">잘못된 유튜브 URL입니다.</p>`;
+  }
+
+  return null;
+
+}
+
+
+/* =====================================================
+   LOAD
+===================================================== */
+
+async function loadItems() {
+
+  let loaded = [];
+
+  if (supabaseClient) {
+
+    const {
+      data,
+      error
+    } = await supabaseClient
+      .from("canvas_items")
+      .select("*")
+      .order("z_index", {
+        ascending: true
+      });
+
+    if (!error && data) {
+
+      loaded = data;
+
+    }
+
+  }
+
+  /*
+    Supabase에 데이터가 없으면
+    localStorage를 백업으로 사용.
+  */
+
+  if (!loaded.length) {
+
+    loaded = loadLocal();
+
+  }
+
+  items = loaded.map(normalizeItem);
+
+  items.forEach(item => {
+
+    maxZIndex =
+      Math.max(
+        maxZIndex,
+        Number(item.z_index) || 1
+      );
+
+  });
+
+  renderCanvas();
+
+}
+
+
+/* =====================================================
+   NORMALIZE
+===================================================== */
+
+function normalizeItem(item) {
+
+  return {
+
+    id:
+      item.id || createId(),
+
+    type:
+      item.type || "text",
+
+    content:
+      item.content || "",
+
+    title:
+      item.title || "",
+
+    category:
+      item.category || item.type || "archive",
+
+    x:
+      Number(item.x) || 0,
+
+    y:
+      Number(item.y) || 0,
+
+    width:
+      Number(item.width) || 240,
+
+    height:
+      Number(item.height) || 160,
+
+    rotation:
+      Number(item.rotation) || 0,
+
+    z_index:
+      Number(item.z_index) || 1
+
+  };
+
+}
+
+
+/* =====================================================
+   SAVE ITEM
+===================================================== */
+
+async function saveItem(item) {
+
+  saveLocal();
+
+  if (!supabaseClient) return;
+
+  const {
+    error
+  } = await supabaseClient
+    .from("canvas_items")
+    .upsert({
+
+      id: item.id,
+
+      type: item.type,
+
+      content: item.content,
+
+      title: item.title,
+
+      category: item.category,
+
+      x: item.x,
+
+      y: item.y,
+
+      width: item.width,
+
+      height: item.height,
+
+      rotation: item.rotation,
+
+      z_index: item.z_index
+
+    });
+
+  if (error) {
+
+    console.error(
+      "Supabase save error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   SAVE ALL
+===================================================== */
+
+async function saveAllItems() {
+
+  for (const item of items) {
+
+    await saveItem(item);
+
+  }
+
+}
+
+
+/* =====================================================
+   DELETE
+===================================================== */
+
+async function deleteItem(item) {
+
+  items =
+    items.filter(
+      x => x.id !== item.id
+    );
+
+  saveLocal();
+
+  if (supabaseClient) {
+
+    await supabaseClient
+      .from("canvas_items")
+      .delete()
+      .eq("id", item.id);
+
+  }
+
+  renderCanvas();
+
+}
+
+
+/* =====================================================
+   CREATE ITEM
+===================================================== */
+
+function createItem() {
+
+  if (!isAdmin) return;
+
+  const type =
+    document.getElementById(
+      "itemType"
+    ).value;
+
+  const category =
+    document.getElementById(
+      "itemCategory"
+    ).value;
+
+  const content =
+    document.getElementById(
+      "itemContent"
+    ).value.trim();
+
+  const title =
+    document.getElementById(
+      "itemTitle"
+    ).value.trim();
+
+
+  if (!content) {
+
+    alert(
+      "내용을 입력하세요."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    type === "video" &&
+    !extractYouTubeId(content)
+  ) {
+
+    alert(
+      "올바른 YouTube URL을 입력하세요."
+    );
+
+    return;
+
+  }
+
+
+  maxZIndex++;
+
+
+  const item = {
+
+    id: createId(),
+
+    type,
+
+    content,
+
+    title,
+
+    category,
+
+    x:
+      200 +
+      Math.random() * 300,
+
+    y:
+      150 +
+      Math.random() * 200,
+
+    width:
+      type === "text" ||
+      type === "note"
+        ? 260
+        : 320,
+
+    height:
+      type === "text" ||
+      type === "note"
+        ? 180
+        : 220,
+
+    rotation:
+      Math.round(
+        (Math.random() * 6 - 3) * 10
+      ) / 10,
+
+    z_index:
+      maxZIndex
+
+  };
+
+
+  items.push(item);
+
+  saveItem(item);
+
+  closeModal();
+
+  renderCanvas();
+
+}
+
+
+/* =====================================================
+   RENDER
+===================================================== */
+
+function renderCanvas() {
+
+  const world =
+    document.getElementById(
+      "world"
+    );
+
+  world.innerHTML = "";
+
+
+  const visibleItems =
+    items.filter(item => {
+
+      if (
+        currentCategory === "all"
+      ) {
+
+        return true;
+
+      }
+
+      return (
+        item.category ===
+        currentCategory
+      );
+
+    });
+
+
+  visibleItems.forEach(
+    item => {
+
+      const el =
+        document.createElement(
+          "div"
+        );
+
+
+      el.className =
+        "canvas-item" +
+        (
+          isAdmin
+            ? " admin"
+            : ""
+        );
+
+
+      el.dataset.id =
+        item.id;
+
+
+      el.style.left =
+        `${item.x}px`;
+
+      el.style.top =
+        `${item.y}px`;
+
+      el.style.width =
+        `${item.width}px`;
+
+      el.style.height =
+        `${item.height}px`;
+
+      el.style.zIndex =
+        item.z_index;
+
+      el.style.transform =
+        `rotate(${item.rotation}deg)`;
+
+
+      const inner =
+        document.createElement(
+          "div"
+        );
+
+      inner.className =
+        "item-inner";
+
+
+      /* --------------------------------
+         TEXT
+      -------------------------------- */
+
+      if (
+        item.type === "text"
+      ) {
+
+        inner.className +=
+          " text-item";
+
+        inner.textContent =
+          item.content;
+
+      }
+
+
+      /* --------------------------------
+         NOTE
+      -------------------------------- */
+
+      else if (
+        item.type === "note"
+      ) {
+
+        inner.className +=
+          " note-item";
+
+        inner.textContent =
+          item.content;
+
+      }
+
+
+      /* --------------------------------
+         IMAGE
+      -------------------------------- */
+
+      else if (
+        item.type === "image"
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+        img.className =
+          "image-item";
+
+        img.src =
+          item.content;
+
+        img.alt =
+          item.title || "";
+
+        img.draggable =
+          false;
+
+        inner.appendChild(
+          img
+        );
+
+      }
+
+
+      /* --------------------------------
+         VIDEO
+      -------------------------------- */
+
+      else if (
+        item.type === "video"
+      ) {
+
+        const videoId =
+          extractYouTubeId(
+            item.content
+          );
+
+        if (videoId) {
+
+          const iframe =
+            document.createElement(
+              "iframe"
+            );
+
+          iframe.className =
+            "video-item";
+
+          iframe.src =
+            `https://www.youtube.com/embed/${videoId}?rel=0`;
+
+          iframe.allowFullscreen =
+            true;
+
+          iframe.setAttribute(
+            "frameborder",
+            "0"
+          );
+
+          /*
+            관리자 드래그를 위해
+            iframe 자체는 클릭을 막는다.
+          */
+
+          if (isAdmin) {
+
+            iframe.style.pointerEvents =
+              "none";
+
           }
+
+          inner.appendChild(
+            iframe
+          );
+
         }
 
-        // Delete Button for Admin
-        const deleteBtn = isAdmin ? `
-          <button onclick="removeItem('${item.id}', event)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow z-10">×</button>
-        ` : '';
+      }
 
-        // Resize handle for Admin
-        const resizeHandle = isAdmin ? `<div class="resize-handle"></div>` : '';
 
-        el.innerHTML = `${deleteBtn}${contentHtml}${resizeHandle}`;
+      el.appendChild(
+        inner
+      );
 
-        // Event Handling
-        setupInteractions(el, item);
-        canvas.appendChild(el);
-      });
+
+      /* --------------------------------
+         ADMIN CONTROLS
+      -------------------------------- */
+
+      if (isAdmin) {
+
+        const deleteButton =
+          document.createElement(
+            "button"
+          );
+
+        deleteButton.className =
+          "delete-button";
+
+        deleteButton.textContent =
+          "×";
+
+        deleteButton.title =
+          "Delete";
+
+        deleteButton.addEventListener(
+          "pointerdown",
+          e => {
+
+            e.stopPropagation();
+
+          }
+        );
+
+        deleteButton.addEventListener(
+          "click",
+          e => {
+
+            e.stopPropagation();
+
+            if (
+              confirm(
+                "이 항목을 삭제할까요?"
+              )
+            ) {
+
+              deleteItem(item);
+
+            }
+
+          }
+        );
+
+
+        const resizeHandle =
+          document.createElement(
+            "div"
+          );
+
+        resizeHandle.className =
+          "resize-handle";
+
+
+        const rotateHandle =
+          document.createElement(
+            "div"
+          );
+
+        rotateHandle.className =
+          "rotate-handle";
+
+
+        const rotateLine =
+          document.createElement(
+            "div"
+          );
+
+        rotateLine.className =
+          "rotate-line";
+
+
+        el.appendChild(
+          deleteButton
+        );
+
+        el.appendChild(
+          resizeHandle
+        );
+
+        el.appendChild(
+          rotateLine
+        );
+
+        el.appendChild(
+          rotateHandle
+        );
+
+
+        resizeHandle.addEventListener(
+          "pointerdown",
+          e => {
+
+            e.stopPropagation();
+
+            startResize(
+              e,
+              item,
+              el
+            );
+
+          }
+        );
+
+
+        rotateHandle.addEventListener(
+          "pointerdown",
+          e => {
+
+            e.stopPropagation();
+
+            startRotate(
+              e,
+              item,
+              el
+            );
+
+          }
+        );
+
+      }
+
+
+      /*
+        관리자만 드래그 가능
+      */
+
+      if (isAdmin) {
+
+        el.addEventListener(
+          "pointerdown",
+          e => {
+
+            if (
+              e.target.classList.contains(
+                "delete-button"
+              ) ||
+              e.target.classList.contains(
+                "resize-handle"
+              ) ||
+              e.target.classList.contains(
+                "rotate-handle"
+              )
+            ) {
+
+              return;
+
+            }
+
+            startDrag(
+              e,
+              item,
+              el
+            );
+
+          }
+        );
+
+      }
+
+
+      /*
+        아이템 클릭 → 앞으로
+      */
+
+      el.addEventListener(
+        "pointerdown",
+        () => {
+
+          if (!isAdmin) return;
+
+          maxZIndex++;
+
+          item.z_index =
+            maxZIndex;
+
+          el.style.zIndex =
+            maxZIndex;
+
+        }
+      );
+
+
+      world.appendChild(
+        el
+      );
+
+    });
+
+}
+
+
+/* =====================================================
+   DRAG
+===================================================== */
+
+function startDrag(
+  e,
+  item,
+  el
+) {
+
+  if (!isAdmin) return;
+
+  e.preventDefault();
+
+  const rect =
+    document
+      .getElementById(
+        "world"
+      )
+      .getBoundingClientRect();
+
+
+  activeDrag = {
+
+    item,
+
+    el,
+
+    startPointerX:
+      e.clientX,
+
+    startPointerY:
+      e.clientY,
+
+    startX:
+      item.x,
+
+    startY:
+      item.y
+
+  };
+
+
+  el.setPointerCapture(
+    e.pointerId
+  );
+
+  el.addEventListener(
+    "pointermove",
+    dragMove
+  );
+
+  el.addEventListener(
+    "pointerup",
+    stopDrag,
+    {
+      once: true
+    }
+  );
+
+}
+
+
+function dragMove(e) {
+
+  if (!activeDrag) return;
+
+  const d =
+    activeDrag;
+
+
+  const dx =
+    e.clientX -
+    d.startPointerX;
+
+  const dy =
+    e.clientY -
+    d.startPointerY;
+
+
+  d.item.x =
+    d.startX + dx;
+
+  d.item.y =
+    d.startY + dy;
+
+
+  d.el.style.left =
+    `${d.item.x}px`;
+
+  d.el.style.top =
+    `${d.item.y}px`;
+
+}
+
+
+async function stopDrag(e) {
+
+  if (!activeDrag) return;
+
+  const el =
+    activeDrag.el;
+
+  el.removeEventListener(
+    "pointermove",
+    dragMove
+  );
+
+  await saveItem(
+    activeDrag.item
+  );
+
+  activeDrag =
+    null;
+
+}
+
+
+/* =====================================================
+   RESIZE
+===================================================== */
+
+function startResize(
+  e,
+  item,
+  el
+) {
+
+  if (!isAdmin) return;
+
+  e.preventDefault();
+
+
+  activeResize = {
+
+    item,
+
+    el,
+
+    startPointerX:
+      e.clientX,
+
+    startPointerY:
+      e.clientY,
+
+    startWidth:
+      item.width,
+
+    startHeight:
+      item.height
+
+  };
+
+
+  el.setPointerCapture(
+    e.pointerId
+  );
+
+  el.addEventListener(
+    "pointermove",
+    resizeMove
+  );
+
+  el.addEventListener(
+    "pointerup",
+    stopResize,
+    {
+      once: true
+    }
+  );
+
+}
+
+
+function resizeMove(e) {
+
+  if (!activeResize) return;
+
+  const d =
+    activeResize;
+
+
+  const dx =
+    e.clientX -
+    d.startPointerX;
+
+  const dy =
+    e.clientY -
+    d.startPointerY;
+
+
+  d.item.width =
+    Math.max(
+      80,
+      d.startWidth + dx
+    );
+
+  d.item.height =
+    Math.max(
+      60,
+      d.startHeight + dy
+    );
+
+
+  d.el.style.width =
+    `${d.item.width}px`;
+
+  d.el.style.height =
+    `${d.item.height}px`;
+
+}
+
+
+async function stopResize(e) {
+
+  if (!activeResize) return;
+
+  const el =
+    activeResize.el;
+
+  el.removeEventListener(
+    "pointermove",
+    resizeMove
+  );
+
+  await saveItem(
+    activeResize.item
+  );
+
+  activeResize =
+    null;
+
+}
+
+
+/* =====================================================
+   ROTATE
+===================================================== */
+
+function startRotate(
+  e,
+  item,
+  el
+) {
+
+  if (!isAdmin) return;
+
+  e.preventDefault();
+
+
+  const rect =
+    el.getBoundingClientRect();
+
+
+  const centerX =
+    rect.left +
+    rect.width / 2;
+
+  const centerY =
+    rect.top +
+    rect.height / 2;
+
+
+  activeRotate = {
+
+    item,
+
+    el,
+
+    centerX,
+
+    centerY,
+
+    startRotation:
+      item.rotation
+
+  };
+
+
+  el.setPointerCapture(
+    e.pointerId
+  );
+
+  el.addEventListener(
+    "pointermove",
+    rotateMove
+  );
+
+  el.addEventListener(
+    "pointerup",
+    stopRotate,
+    {
+      once: true
+    }
+  );
+
+}
+
+
+function rotateMove(e) {
+
+  if (!activeRotate) return;
+
+  const d =
+    activeRotate;
+
+
+  const angle =
+    Math.atan2(
+      e.clientY - d.centerY,
+      e.clientX - d.centerX
+    ) *
+    180 /
+    Math.PI;
+
+
+  const rotation =
+    Math.round(
+      angle / 2
+    ) * 2;
+
+
+  d.item.rotation =
+    rotation;
+
+
+  d.el.style.transform =
+    `rotate(${rotation}deg)`;
+
+}
+
+
+async function stopRotate(e) {
+
+  if (!activeRotate) return;
+
+  const el =
+    activeRotate.el;
+
+  el.removeEventListener(
+    "pointermove",
+    rotateMove
+  );
+
+  await saveItem(
+    activeRotate.item
+  );
+
+  activeRotate =
+    null;
+
+}
+
+
+/* =====================================================
+   CATEGORY
+===================================================== */
+
+document
+  .querySelectorAll(
+    ".category-button"
+  )
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            ".category-button"
+          )
+          .forEach(
+            x =>
+              x.classList.remove(
+                "active"
+              )
+          );
+
+        button.classList.add(
+          "active"
+        );
+
+
+        currentCategory =
+          button.dataset.category;
+
+
+        renderCanvas();
+
+      }
+    );
+
+  });
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+function openLoginModal() {
+
+  document
+    .getElementById(
+      "modalTitle"
+    )
+    .textContent =
+    "Administrator";
+
+
+  document
+    .getElementById(
+      "loginForm"
+    )
+    .style.display =
+    "block";
+
+
+  document
+    .getElementById(
+      "addForm"
+    )
+    .style.display =
+    "none";
+
+
+  document
+    .getElementById(
+      "modal"
+    )
+    .classList.add(
+      "show"
+    );
+
+
+  document
+    .getElementById(
+      "passwordInput"
+    )
+    .focus();
+
+}
+
+
+function loginAdmin() {
+
+  const password =
+    document
+      .getElementById(
+        "passwordInput"
+      )
+      .value;
+
+
+  /*
+    TEST ONLY.
+
+    실제 운영에서는 Supabase Auth 사용.
+  */
+
+  if (
+    password ===
+    DEV_ADMIN_PASSWORD
+  ) {
+
+    isAdmin = true;
+
+    closeModal();
+
+    document
+      .getElementById(
+        "adminPanel"
+      )
+      .classList.add(
+        "show"
+      );
+
+
+    document
+      .getElementById(
+        "adminBadge"
+      )
+      .classList.add(
+        "show"
+      );
+
+
+    document
+      .getElementById(
+        "loginButton"
+      )
+      .style.display =
+      "none";
+
+
+    renderCanvas();
+
+  } else {
+
+    alert(
+      "비밀번호가 올바르지 않습니다."
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+function logoutAdmin() {
+
+  isAdmin = false;
+
+  document
+    .getElementById(
+      "adminPanel"
+    )
+    .classList.remove(
+      "show"
+    );
+
+
+  document
+    .getElementById(
+      "adminBadge"
+    )
+    .classList.remove(
+      "show"
+    );
+
+
+  document
+    .getElementById(
+      "loginButton"
+    )
+    .style.display =
+    "block";
+
+
+  renderCanvas();
+
+}
+
+
+/* =====================================================
+   ADD MODAL
+===================================================== */
+
+function openAddModal(
+  type
+) {
+
+  if (!isAdmin) return;
+
+
+  document
+    .getElementById(
+      "modalTitle"
+    )
+    .textContent =
+    "Add Item";
+
+
+  document
+    .getElementById(
+      "loginForm"
+    )
+    .style.display =
+    "none";
+
+
+  document
+    .getElementById(
+      "addForm"
+    )
+    .style.display =
+    "block";
+
+
+  document
+    .getElementById(
+      "itemType"
+    )
+    .value =
+    type;
+
+
+  document
+    .getElementById(
+      "itemContent"
+    ).value = "";
+
+
+  document
+    .getElementById(
+      "itemTitle"
+    ).value = "";
+
+
+  document
+    .getElementById(
+      "modal"
+    )
+    .classList.add(
+      "show"
+    );
+
+}
+
+
+function closeModal() {
+
+  document
+    .getElementById(
+      "modal"
+    )
+    .classList.remove(
+      "show"
+    );
+
+}
+
+
+function closeAddModal() {
+
+  closeModal();
+
+}
+
+
+/* =====================================================
+   KEYBOARD
+===================================================== */
+
+document.addEventListener(
+  "keydown",
+  e => {
+
+    if (!isAdmin) return;
+
+
+    /*
+      ESC
+    */
+
+    if (
+      e.key === "Escape"
+    ) {
+
+      closeModal();
+
     }
 
-    function setupInteractions(el, item) {
-      let isDragging = false;
-      let isResizing = false;
-      let startX, startY, startLeft, startTop, startWidth, startHeight;
 
-      const handleDown = (e) => {
-        maxZIndex++;
-        item.z_index = maxZIndex;
-        el.style.zIndex = maxZIndex;
+    /*
+      DELETE
 
-        if (!isAdmin) return;
+      선택 시스템을 확장할 때
+      사용할 수 있는 자리.
+    */
 
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  }
+);
 
-        if (e.target.classList.contains('resize-handle')) {
-          isResizing = true;
-          startWidth = item.width;
-          startHeight = item
+
+/* =====================================================
+   INITIAL LOAD
+===================================================== */
+
+loadItems();
+
+</script>
+
+</body>
+</html>
